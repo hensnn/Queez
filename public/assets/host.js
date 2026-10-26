@@ -255,7 +255,8 @@ function viewLobby(st) {
 function tilesFor(q, r, counts) {
   const total = counts ? counts.reduce((a, b) => a + b, 0) : 0;
   const votes = r && r.votes ? r.votes : null;   // jen v netajné hře
-  return h('div', { class: 'h-tiles' }, q.options.map(o => {
+  const lay = last && last.game ? (last.game.layout === 'grid' ? ' lay-grid' : last.game.layout === 'list' ? ' lay-list' : '') : '';
+  return h('div', { class: 'h-tiles' + lay }, q.options.map(o => {
     const ok = r && q.type !== 'poll' && r.correct.includes(o.pos);
     const dim = r && q.type !== 'poll' && !ok;
     const c = counts ? counts[o.pos] : null;

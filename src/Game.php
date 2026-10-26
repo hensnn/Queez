@@ -582,6 +582,7 @@ final class Game
                 'total'               => (int)($s['_total'] ?? 0),
                 'is_last'             => $idx + 1 >= (int)($s['_total'] ?? 0),
                 'warn_seconds'        => (int)($s['warn_seconds'] ?? 5),
+                'layout'              => in_array($s['answer_layout'] ?? 'auto', ['auto', 'grid', 'list'], true) ? $s['answer_layout'] : 'auto',
                 'letters'             => ($s['tts_option_letters'] ?? 'auto') === 'always' || (($s['tts_option_letters'] ?? 'auto') === 'auto' && $g['mode'] === 'voice'),
                 'lb_next'             => $phase === 'reveal' ? self::showLeaderboardAfter($g) : true,
                 'allow_change_answer' => !empty($s['allow_change_answer']),

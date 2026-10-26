@@ -123,6 +123,7 @@ Vzorec je popsán uživateli v Nastavení → Hra (`Settings::tabs()`), při zm�
   `Clock`, `PollTransport`, `postJson`, `avatar()`, `confetti()`, `setRing()`.
 - `play.js` (hráč), `host.js` (moderátor/projektor + hlasový režim), `tts.js` (Web Speech API + záloha Gemini TTS, fronta vět), `admin.js` (SPA s hash routingem).
 - Vzhled: `game.css` (hráč+moderátor) a `admin.css`; design tokeny v `:root`, teplý přechod odvozený z `color_primary` v nastavení, písmo Nunito lokálně.
+- Rozložení odpovědních tlačítek řídí nastavení `answer_layout` (`auto|grid|list`) → `state.game.layout` → třída `lay-grid` / `lay-list` na `.tiles` (hráč) a `.h-tiles` (moderátor); `auto` = bez třídy, o rozložení rozhodují media queries v `game.css` (odpovědi s textem se na úzkém displeji řadí pod sebe).
 - Animace „vyskočení“ se spouští jen při změně obrazovky (třída `still` na `#app`), jinak by blikaly při každém pollu.
 - **Pozor na pořadí:** odpočet hráče se zastavuje funkcí `stopTick()` v `render()` **před** vytvořením obrazovky (obrazovka si spouští vlastní interval).
 

@@ -86,6 +86,11 @@ function head(st, extra) {
 }
 
 let lastScreen = null;
+/** Třída rozložení odpovědních tlačítek podle nastavení (auto = bez třídy). */
+function layoutClass(st) {
+  return st.game.layout === 'grid' ? ' lay-grid' : st.game.layout === 'list' ? ' lay-list' : '';
+}
+
 function render(st) {
   const screen = st.phase + ':' + (st.question ? st.question.index : '-');
   $app.classList.toggle('still', screen === lastScreen);   // bez animací při pouhé aktualizaci stejné obrazovky
@@ -129,7 +134,7 @@ function viewQuestion(st) {
   const locked = reading || (me.answered && !st.game.allow_change_answer);
 
   const hasText = q.options.some(o => o.text !== null);
-  const tiles = h('div', { class: 'tiles n' + q.options.length + (hasText ? ' txt' : '') },
+  const tiles = h('div', { class: 'tiles n' + q.options.length + (hasText ? ' txt' : '') + layoutClass(st) },
     q.options.map(o => {
       const isSel = selected.includes(o.pos);
       const cnt = q.counts ? q.counts[o.pos] : null;
@@ -196,7 +201,7 @@ function viewReveal(st) {
   else box = h('div', { class: 'result neutral' }, me.answered ? '🗳️ Díky za hlas!' : '😴 Bez odpovědi');
   const mine = me.choice || myLastChoice[q.index] || [];
   const isPoll = q.type === 'poll';
-  const tiles = h('div', { class: 'tiles n' + q.options.length + (q.options.some(o => o.text !== null) ? ' txt' : ''), style: 'flex:0' },
+  const tiles = h('div', { class: 'tiles n' + q.options.length + (q.options.some(o => o.text !== null) ? ' txt' : '') + layoutClass(st), style: 'flex:0' },
     q.options.map(o => h('div', {
       class: 'tile c' + o.pos + (!isPoll && r.correct.includes(o.pos) ? ' ok' : (!isPoll ? ' dim' : '')) + (mine.includes(o.pos) ? ' sel' : ''),
       style: 'min-height:4rem',

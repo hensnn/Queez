@@ -198,12 +198,12 @@ body.host.voice{font-size:17px}
 }
 /* odpovědi s textem se na úzkém displeji řadí pod sebe (dlouhý text se ve dvou sloupcích láme na mnoho řádků) */
 @media (max-width:480px) and (orientation:portrait){
-  .tiles.txt{grid-template-columns:1fr;grid-auto-rows:minmax(3.4rem,auto)}
-  .tiles.txt .tile{min-height:3.4rem}
+  .tiles.txt:not(.lay-grid){grid-template-columns:1fr;grid-auto-rows:minmax(3.4rem,auto)}
+  .tiles.txt:not(.lay-grid) .tile{min-height:3.4rem}
   /* pět a šest odpovědí s textem: kompaktnější, ať se vejdou na displej */
-  .tiles.txt.n5,.tiles.txt.n6{gap:.55rem}
-  .tiles.txt.n5 .tile,.tiles.txt.n6 .tile{min-height:3rem;padding:.25rem .6rem;gap:.5rem;font-size:clamp(.9rem,4vw,1.1rem);box-shadow:0 5px 0 var(--ink);border-width:3px;border-radius:20px}
-  .tiles.txt.n5 .tile .shape,.tiles.txt.n6 .tile .shape{width:2.1rem;height:2.1rem;font-size:1.1rem}
+  .tiles.txt.n5:not(.lay-grid),.tiles.txt.n6:not(.lay-grid){gap:.55rem}
+  .tiles.txt.n5:not(.lay-grid) .tile,.tiles.txt.n6:not(.lay-grid) .tile{min-height:3rem;padding:.25rem .6rem;gap:.5rem;font-size:clamp(.9rem,4vw,1.1rem);box-shadow:0 5px 0 var(--ink);border-width:3px;border-radius:20px}
+  .tiles.txt.n5:not(.lay-grid) .tile .shape,.tiles.txt.n6:not(.lay-grid) .tile .shape{width:2.1rem;height:2.1rem;font-size:1.1rem}
 }
 @media (max-width:380px){
   body{font-size:16px}
@@ -234,6 +234,12 @@ body.host.voice{font-size:17px}
   .tiles.n3,.tiles.n4,.tiles.n5,.tiles.n6{grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))}
   .h-tiles{grid-template-columns:1fr 1fr}
 }
+
+/* Rozložení odpovědních tlačítek podle nastavení (přebíjí automatiku) */
+.tiles.lay-grid,.h-tiles.lay-grid{grid-template-columns:1fr 1fr!important}
+.tiles.lay-list,.h-tiles.lay-list{grid-template-columns:1fr!important}
+.tiles.lay-list{grid-auto-rows:minmax(3.6rem,6.5rem)}
+.tiles.lay-list .tile{min-height:3.6rem}
 
 /* Animace „vyskočení“ jen při změně obrazovky, ne při každé průběžné aktualizaci */
 .still .tile,.still .chip,.still .lb li,.still .result,.still .podium .col{animation:none}
