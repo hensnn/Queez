@@ -1,0 +1,54 @@
+# Caddy: vlastní site pro aplikaci Kvíz (HTTP v místní síti; HTTPS a veřejnou doménu řeší reverzní proxy před Caddy).
+#
+# Postup: viz README, kapitola "Caddy".
+#  - PORT: změníte přepsáním čísla 87 na obou místech níže.
+#  - Máte-li v Caddyfile už blok { ... } s globálními volbami, přidejte do něj jen část "servers :87 { ... }".
+#    Globální blok smí být v souboru jen jednou a musí být úplně nahoře.
+#  - Soubory aplikace jsou v /var/www/kviz, webroot je jen složka public/.
+#  - Po úpravě:  sudo caddy validate --config /etc/caddy/Caddyfile  a  sudo systemctl reload caddy
+
+{
+	servers :87 {
+		# Věřit hlavičkám X-Forwarded-* z místní sítě (reverzní proxy před Caddy)
+		trusted_proxies static private_ranges
+	}
+}
+
+:87 {
+	root * /var/www/kviz/public
+	encode zstd gzip
+
+	# Skryté soubory (.git, .env, …) se nikdy neservírují
+	@hidden path /.*
+	respond @hidden 404
+
+	# Úvodní adresa → přihlášení hráčů
+	redir / /play/ 302
+
+	# Pomalé úlohy (Gemini generování, Gemini TTS, záloha/obnova) mají vlastní pool s dlouhým limitem,
+	# aby nikdy neobsadily pracovníky určené hráčům.
+	@slow path /api/admin_gemini.php /api/tts_gemini.php /api/admin_maintenance.php
+	handle @slow {
+		php_fastcgi unix//run/php/kviz-slow.sock {
+			read_timeout 130s
+		}
+	}
+
+	# Všechno ostatní: PHP jen pro *.php, zbytek jsou statické soubory
+	handle {
+		@php path *.php
+		php_fastcgi @php unix//run/php/kviz.sock
+		file_server
+	}
+
+	# Statické soubory si prohlížeč smí krátce pamatovat
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=300"
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+		-Server
+	}
+}

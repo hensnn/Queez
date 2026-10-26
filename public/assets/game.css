@@ -1,0 +1,172 @@
+/* Nunito (SIL OFL), uloženo lokálně – žádné CDN */
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url(fonts/nunito-latin-ext-wght-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url(fonts/nunito-latin-wght-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+
+:root{
+  --primary:#ff6b4a;--accent:#ffc233;
+  --ink:#2d1b3d;--cream:#fff7e8;--cream2:#ffe9c7;
+  --ok:#22b86a;--bad:#ef4565;--sky:#3d8bff;
+  --bg-a:color-mix(in srgb,var(--primary) 50%,#ffc04d);
+  --bg-b:var(--primary);
+  --bg-c:color-mix(in srgb,var(--primary) 45%,#8b3df0);
+  --shadow:0 6px 0 var(--ink);
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;font:700 18px/1.35 "Nunito","Arial Rounded MT Bold","Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#fff;
+  background:radial-gradient(rgba(255,255,255,.22) 2px,transparent 2.5px) 0 0/30px 30px,linear-gradient(165deg,var(--bg-a) 0%,var(--bg-b) 48%,var(--bg-c) 100%) fixed;
+  -webkit-tap-highlight-color:transparent;text-shadow:0 2px 0 rgba(45,27,61,.28)}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ---------- barvy odpovědí ---------- */
+.c0{--tc:#ff4d6d;--tl:#ff8fa3;--td:#b5223f}
+.c1{--tc:#3d8bff;--tl:#86b8ff;--td:#1b52b8}
+.c2{--tc:#ffb703;--tl:#ffd96a;--td:#b27d00;--tx:var(--ink)}
+.c3{--tc:#23c26b;--tl:#6fe0a0;--td:#13804a}
+.c4{--tc:#9b5de5;--tl:#c4a0f5;--td:#6330a8}
+.c5{--tc:#14c8c8;--tl:#6fe3e3;--td:#0b8585}
+
+/* ---------- společné prvky ---------- */
+.banner{background:var(--ink);color:#fff;text-align:center;padding:.5rem;font-weight:900}
+.banner.conn{background:var(--bad)}
+.pill{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:999px;padding:.1rem .9rem;font-weight:900;text-shadow:none;box-shadow:0 3px 0 var(--ink);display:inline-flex;align-items:center;gap:.4rem}
+.pill.gold{background:var(--accent)}
+.card{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:26px;padding:1.2rem;width:100%;box-shadow:var(--shadow);text-shadow:none}
+.card h1{margin:.1em 0 .5em;font-size:1.7rem;font-weight:1000}
+.card label{display:block;font-weight:900;margin:.8rem 0 .25rem}
+.card input{width:100%;padding:.8rem 1rem;border:3px solid var(--ink);border-radius:16px;font-size:1.3rem;font-weight:800;background:#fff;color:var(--ink)}
+.card input:focus{outline:4px solid var(--accent)}
+.card .err{color:var(--bad);font-weight:900;min-height:1.4em;margin-top:.6rem}
+.btn{background:linear-gradient(180deg,#ffe066,var(--accent));color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:.85rem 1.4rem;font-weight:1000;font-size:1.2rem;width:100%;margin-top:.9rem;box-shadow:0 6px 0 var(--ink);text-shadow:none;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(5px);box-shadow:0 1px 0 var(--ink)}
+.btn:disabled{opacity:.55}
+.btn.sec{background:var(--cream);}
+.big{font-size:2rem;font-weight:1000;line-height:1.15}
+.huge{font-size:3.4rem;font-weight:1000;line-height:1.1}
+.title-bubble{font-size:2.3rem;font-weight:1000;text-align:center;-webkit-text-stroke:0;text-shadow:0 4px 0 var(--ink),0 0 0 var(--ink);letter-spacing:.01em}
+
+/* avatar s iniciálami */
+.av{display:inline-flex;align-items:center;justify-content:center;width:2.3rem;height:2.3rem;border-radius:50%;border:3px solid var(--ink);color:#fff;font-weight:1000;font-size:.95rem;text-shadow:0 2px 0 rgba(0,0,0,.3);flex:none;box-shadow:0 2px 0 var(--ink)}
+.av.sm{width:1.8rem;height:1.8rem;font-size:.75rem}
+.av.lg{width:4.2rem;height:4.2rem;font-size:1.6rem;border-width:4px}
+.av.xl{width:6rem;height:6rem;font-size:2.2rem;border-width:5px}
+
+/* odpočet s kruhem */
+.timer,.bigtimer{--p:100;display:flex;align-items:center;justify-content:center;border-radius:50%;font-weight:1000;color:var(--ink);text-shadow:none;border:3px solid var(--ink);
+  background:radial-gradient(var(--cream) 0 58%,transparent 59%),conic-gradient(var(--ok) calc(var(--p)*1%),rgba(45,27,61,.18) 0)}
+.timer{width:4rem;height:4rem;font-size:1.6rem}
+.timer.low,.bigtimer.low{background:radial-gradient(#ffe3e8 0 58%,transparent 59%),conic-gradient(var(--bad) calc(var(--p)*1%),rgba(45,27,61,.18) 0);animation:pulse .8s infinite;color:var(--bad)}
+.bigtimer{width:6.5rem;height:6.5rem;font-size:3rem}
+@keyframes pulse{50%{transform:scale(1.1)}}
+@keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+/* ---------- odpovědi ---------- */
+.tiles{display:grid;gap:1rem;flex:0 1 auto;align-content:start;grid-auto-rows:minmax(6rem,13rem)}
+.tiles.n2,.tiles.n1{grid-template-columns:1fr}
+.tiles.n3,.tiles.n4,.tiles.n5,.tiles.n6{grid-template-columns:1fr 1fr}
+.tile{position:relative;border:4px solid var(--ink);border-radius:28px;color:var(--tx,#fff);min-height:6rem;padding:.7rem .9rem;
+  display:flex;align-items:center;justify-content:center;gap:.7rem;font-weight:1000;font-size:1.3rem;text-align:left;
+  background:radial-gradient(120% 90% at 30% 0%,var(--tl),transparent 60%),var(--tc);box-shadow:0 9px 0 var(--ink);
+  transition:transform .08s,box-shadow .08s,opacity .2s;animation:pop .35s both;text-shadow:0 2px 0 rgba(0,0,0,.28)}
+.c2.tile{text-shadow:none}
+button.tile:active:not(:disabled){transform:translateY(7px);box-shadow:0 2px 0 var(--ink)}
+.tile:nth-child(2){animation-delay:.05s}.tile:nth-child(3){animation-delay:.1s}.tile:nth-child(4){animation-delay:.15s}
+.tile .shape{width:3.2rem;height:3.2rem;border-radius:50%;background:#fff;color:var(--tc);border:3px solid var(--ink);display:inline-flex;align-items:center;justify-content:center;font-size:1.7rem;line-height:1;flex:none;text-shadow:none}
+.tile .tx{flex:1}
+.tile .letter{font-size:1.2rem;font-weight:1000;background:rgba(45,27,61,.35);border-radius:10px;padding:.05rem .5rem;min-width:1.9rem;text-align:center}
+.tile.sel{transform:scale(1.04);box-shadow:0 0 0 6px #fff,0 9px 0 6px var(--ink);z-index:1}
+.tile.sel::before{content:"✔";position:absolute;top:-.8rem;right:-.5rem;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--ok);color:#fff;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.1rem;text-shadow:none}
+.tile:disabled:not(.sel){opacity:.6;filter:saturate(.7)}
+.tile:disabled{cursor:default}
+.tile.ok{box-shadow:0 0 0 6px var(--ok),0 9px 0 6px var(--ink)}
+.tile.ok::after{content:"✔";position:absolute;top:-.8rem;right:-.5rem;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--ok);color:#fff;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.1rem;text-shadow:none}
+.tile.dim{opacity:.4;filter:grayscale(.5)}
+.tile .cnt{position:absolute;right:.7rem;bottom:.4rem;font-size:1rem;background:var(--cream);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:0 .55rem;text-shadow:none}
+.tile .who{display:block;font-size:.85rem;font-weight:700;opacity:.95;margin-top:.2rem;max-height:2.6em;overflow:hidden}
+
+/* ---------- hráč ---------- */
+.p-wrap{flex:1;display:flex;flex-direction:column;padding:1rem;padding-bottom:max(1.4rem,env(safe-area-inset-bottom));max-width:36rem;width:100%;margin:0 auto}
+.p-top{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.9rem}
+.p-center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.9rem}
+.qbox{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:26px;padding:1rem 1.1rem;box-shadow:var(--shadow);text-shadow:none;margin:.2rem 0 1rem;text-align:center}
+.qtext{font-size:1.5rem;font-weight:1000;line-height:1.25}
+.qimg{max-width:100%;max-height:30vh;border-radius:18px;border:3px solid var(--ink);display:block;margin:.7rem auto 0}
+.result{border:4px solid var(--ink);border-radius:28px;padding:1.1rem;text-align:center;font-weight:1000;font-size:2.1rem;box-shadow:var(--shadow);animation:pop .4s both}
+.result.good{background:linear-gradient(180deg,#5be39a,var(--ok))}
+.result.bad{background:linear-gradient(180deg,#ff8aa0,var(--bad))}
+.result.neutral{background:linear-gradient(180deg,#8ec0ff,var(--sky))}
+.lb{width:100%;list-style:none;margin:0;padding:0}
+.lb li{display:flex;gap:.7rem;align-items:center;background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:.45rem .8rem;margin:.5rem 0;font-weight:900;text-shadow:none;box-shadow:0 4px 0 var(--ink);animation:pop .35s both}
+.lb li.me{background:linear-gradient(180deg,#ffe066,var(--accent))}
+.lb .rk{width:2rem;text-align:center;font-weight:1000;font-size:1.15rem}
+.lb .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .gn{color:var(--ok);font-size:.95rem;font-weight:1000}
+.expl{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:20px;padding:.8rem;text-align:center;text-shadow:none}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.confetti i{position:absolute;top:-5vh;left:var(--x);width:.7rem;height:1.1rem;background:var(--c);border-radius:3px;animation:fall var(--d) linear var(--w) infinite;opacity:.95}
+
+/* ---------- moderátor / projektor ---------- */
+body.host{font-size:22px}
+.h-wrap{flex:1;display:flex;flex-direction:column;padding:1.2rem 2rem}
+.h-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:.9rem;gap:1rem}
+.h-top .title{font-size:1.5rem;font-weight:1000;text-shadow:0 3px 0 var(--ink)}
+.h-main{flex:1;display:flex;flex-direction:column;justify-content:center}
+.h-lobby{display:grid;grid-template-columns:minmax(18rem,30rem) 1fr;gap:2rem;align-items:start}
+@media(max-width:800px){.h-lobby{grid-template-columns:1fr}.h-wrap{padding:.8rem}}
+.qrbox{background:var(--cream);border:4px solid var(--ink);border-radius:30px;padding:1.2rem;text-align:center;color:var(--ink);box-shadow:0 8px 0 var(--ink);text-shadow:none}
+.qrbox svg{width:100%;max-width:min(100%,55vh);height:auto;display:block;margin:0 auto .4rem}
+.pin{font-size:4rem;font-weight:1000;letter-spacing:.14em;line-height:1.1;color:var(--primary);-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink)}
+.joinurl{font-size:.9rem;opacity:.75;word-break:break-all}
+.chips{display:flex;flex-wrap:wrap;gap:.6rem}
+.chip{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:999px;padding:.2rem .5rem .2rem .25rem;font-weight:900;display:flex;gap:.5rem;align-items:center;box-shadow:0 3px 0 var(--ink);text-shadow:none;animation:pop .3s both}
+.chip button{background:var(--bad);color:#fff;border:2px solid var(--ink);border-radius:50%;width:1.5rem;height:1.5rem;line-height:1;font-size:.8rem}
+.h-q{font-size:2.6rem;font-weight:1000;text-align:center;margin:.4rem auto 1.1rem;background:var(--cream);color:var(--ink);border:4px solid var(--ink);border-radius:30px;padding:.8rem 1.4rem;box-shadow:0 8px 0 var(--ink);text-shadow:none;max-width:70rem;line-height:1.2}
+.h-tiles{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;max-width:70rem;margin:0 auto;width:100%}
+.h-tiles .tile{min-height:7rem;font-size:1.8rem;overflow:hidden}
+.h-tiles .tile .shape{width:4rem;height:4rem;font-size:2.1rem}
+.h-tiles .bar{position:absolute;left:0;bottom:0;height:.6rem;background:rgba(255,255,255,.9)}
+.h-tiles .tile .cnt{font-size:1.4rem}
+.h-ctl{display:flex;gap:.8rem;justify-content:center;padding:.9rem;flex-wrap:wrap;background:rgba(45,27,61,.55);border-top:3px solid var(--ink)}
+.h-ctl button{background:linear-gradient(180deg,#ffe066,var(--accent));color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:.7rem 1.5rem;font-weight:1000;font-size:1.1rem;box-shadow:0 5px 0 var(--ink);text-shadow:none;transition:transform .08s,box-shadow .08s}
+.h-ctl button:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.h-ctl button.sec{background:var(--cream)}
+.h-ctl button:disabled{opacity:.5}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:1.2rem;margin:1rem 0;min-height:19rem}
+.podium .col{text-align:center;width:min(14rem,30%);display:flex;flex-direction:column;align-items:center;animation:pop .5s both}
+.podium .p1{animation-delay:.25s}.podium .p3{animation-delay:.1s}
+.podium .nm{font-weight:1000;font-size:1.5rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 3px 0 var(--ink)}
+.podium .sc{margin-bottom:.4rem;font-weight:900;text-shadow:0 2px 0 var(--ink)}
+.podium .crown{font-size:2.2rem;line-height:1;margin-bottom:-.5rem;z-index:1;text-shadow:none}
+.podium .blk{width:100%;border:4px solid var(--ink);border-bottom:0;border-radius:22px 22px 0 0;display:flex;align-items:flex-start;justify-content:center;font-size:3rem;font-weight:1000;padding-top:.3rem;color:var(--ink);text-shadow:none;margin-top:.5rem}
+.podium .p1 .blk{height:11rem;background:linear-gradient(180deg,#ffe066,#ffb703)}
+.podium .p2 .blk{height:8rem;background:linear-gradient(180deg,#f1f5f9,#b8c4d4)}
+.podium .p3 .blk{height:5.5rem;background:linear-gradient(180deg,#ffc08a,#d98842)}
+.h-rest{columns:2;column-gap:2rem;max-width:60rem;margin:0 auto;width:100%}
+.h-rest li{break-inside:avoid}
+.summary{max-width:60rem;margin:1rem auto;width:100%;background:rgba(45,27,61,.45);border-radius:22px;padding:.8rem 1rem;border:3px solid var(--ink)}
+.summary summary{font-weight:1000;cursor:pointer}
+.summary .qs{background:var(--cream);color:var(--ink);border-radius:14px;padding:.6rem .9rem;margin:.6rem 0;font-size:1rem;text-shadow:none}
+.summary .qs .o{display:flex;gap:.5rem;opacity:.8}
+.summary .qs .o.ok{font-weight:1000;opacity:1;color:var(--ok)}
+
+/* hlasový režim: kompaktní ovládací panel pro mobil */
+body.host.voice{font-size:17px}
+.voice .h-wrap{padding:.6rem .8rem}
+.voice .h-top .title{font-size:1rem}
+.voice .h-q{font-size:1.3rem;margin:.4rem 0 .6rem;padding:.6rem .9rem;border-radius:22px}
+.voice .h-tiles{grid-template-columns:1fr;gap:.6rem}
+.voice .h-tiles .tile{min-height:3.4rem;font-size:1.1rem;padding:.3rem .7rem;box-shadow:0 5px 0 var(--ink);border-radius:20px}
+.voice .h-tiles .tile .shape{width:2.2rem;height:2.2rem;font-size:1.2rem}
+.voice .bigtimer{font-size:1.8rem;width:4rem;height:4rem}
+.voice .pin{font-size:2.6rem}
+.voice .podium{min-height:12rem}
+.voice .h-ctl{position:sticky;bottom:0;gap:.5rem;padding:.6rem}
+.voice .h-ctl button{flex:1 1 42%;padding:.9rem .5rem;font-size:1.05rem}
+
+/* Animace „vyskočení“ jen při změně obrazovky, ne při každé průběžné aktualizaci */
+.still .tile,.still .chip,.still .lb li,.still .result,.still .podium .col{animation:none}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}

@@ -1,0 +1,3 @@
+# Denní záloha databáze ve 4:15, ponechá posledních 14. Zkopírujte do /etc/cron.d/kviz-backup
+# (cestu k PHP zjistíte příkazem: which php)
+15 4 * * * www-data /usr/bin/php /var/www/kviz/tools/backup.php /var/www/kviz/data/backups 14 >> /var/www/kviz/logs/backup.log 2>&1

@@ -1,0 +1,175 @@
+{
+  "format": "kviz-v1",
+  "title": "Hospodský kvíz – všeobecný",
+  "description": "12 otázek na všeobecný přehled, jedna anketa na závěr",
+  "category": "Hospodský kvíz",
+  "settings": {},
+  "questions": [
+    {
+      "type": "choice",
+      "text": "Které město je hlavním městem Austrálie?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Hlavním městem je Canberra, i když největším městem je Sydney.",
+      "options": [
+        { "text": "Sydney", "correct": false },
+        { "text": "Melbourne", "correct": false },
+        { "text": "Canberra", "correct": true },
+        { "text": "Perth", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Kolik kostí má dospělý člověk?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Novorozenec jich má přes 300, během růstu část z nich srůstá.",
+      "options": [
+        { "text": "186", "correct": false },
+        { "text": "206", "correct": true },
+        { "text": "226", "correct": false },
+        { "text": "256", "correct": false }
+      ]
+    },
+    {
+      "type": "truefalse",
+      "text": "Pavouci patří mezi hmyz.",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Pavouci jsou pavoukovci, mají osm nohou. Hmyz má nohy jen tři páry.",
+      "options": [
+        { "text": "Pravda", "correct": false },
+        { "text": "Nepravda", "correct": true }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Kdo napsal román Babička?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Babičku vydala Božena Němcová v roce 1855.",
+      "options": [
+        { "text": "Karel Čapek", "correct": false },
+        { "text": "Alois Jirásek", "correct": false },
+        { "text": "Božena Němcová", "correct": true },
+        { "text": "Jaroslav Vrchlický", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Které dvě z těchto zemí sousedí s Českou republikou?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Česko sousedí s Německem, Polskem, Rakouskem a Slovenskem.",
+      "options": [
+        { "text": "Německo", "correct": true },
+        { "text": "Francie", "correct": false },
+        { "text": "Polsko", "correct": true },
+        { "text": "Itálie", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Jakou chemickou značku má zlato?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Značka Au pochází z latinského aurum.",
+      "options": [
+        { "text": "Ag", "correct": false },
+        { "text": "Au", "correct": true },
+        { "text": "Fe", "correct": false },
+        { "text": "Zn", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Ve kterém roce vzniklo samostatné Československo?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Československo vzniklo 28. října 1918.",
+      "options": [
+        { "text": "1914", "correct": false },
+        { "text": "1918", "correct": true },
+        { "text": "1938", "correct": false },
+        { "text": "1945", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Která planeta je nejblíže Slunci?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Merkur je nejmenší planeta sluneční soustavy a Slunci je nejblíž.",
+      "options": [
+        { "text": "Venuše", "correct": false },
+        { "text": "Mars", "correct": false },
+        { "text": "Merkur", "correct": true },
+        { "text": "Země", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Která surovina dává pivu typickou hořkou chuť?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Hořkost pivu dávají chmelové pryskyřice.",
+      "options": [
+        { "text": "Slad", "correct": false },
+        { "text": "Chmel", "correct": true },
+        { "text": "Kvasnice", "correct": false },
+        { "text": "Voda", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Která řeka je nejdelší na území České republiky?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Vltava měří na našem území přibližně 430 km.",
+      "options": [
+        { "text": "Labe", "correct": false },
+        { "text": "Morava", "correct": false },
+        { "text": "Vltava", "correct": true },
+        { "text": "Odra", "correct": false }
+      ]
+    },
+    {
+      "type": "choice",
+      "text": "Kolik hráčů je na hřišti za jeden tým ve fotbale, včetně brankáře?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "Na hřišti je za každý tým jedenáct hráčů.",
+      "options": [
+        { "text": "9", "correct": false },
+        { "text": "10", "correct": false },
+        { "text": "11", "correct": true },
+        { "text": "12", "correct": false }
+      ]
+    },
+    {
+      "type": "poll",
+      "text": "Jaké je vaše nejoblíbenější hospodské jídlo?",
+      "image": null,
+      "time_limit": null,
+      "points": null,
+      "explanation": "",
+      "options": [
+        { "text": "Svíčková", "correct": false },
+        { "text": "Smažený sýr", "correct": false },
+        { "text": "Guláš", "correct": false },
+        { "text": "Utopenec", "correct": false }
+      ]
+    }
+  ]
+}

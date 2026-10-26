@@ -1,0 +1,62 @@
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url(fonts/nunito-latin-ext-wght-normal.woff2) format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Nunito";font-style:normal;font-weight:200 1000;font-display:swap;src:url(fonts/nunito-latin-wght-normal.woff2) format("woff2");unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{--primary:#ff6b4a;--accent:#ffc233;--ink:#2d1b3d;--bg:#fff3e0;--card:#fffdf8;--text:#3a2a47;--muted:#7d6b88;--line:#f0dcc0;--danger:#e0344f;--ok:#1fae62}
+*{box-sizing:border-box}
+body{margin:0;font:600 16px/1.45 "Nunito","Segoe UI",system-ui,sans-serif;background:radial-gradient(rgba(255,160,80,.16) 2px,transparent 2.5px) 0 0/28px 28px,var(--bg);color:var(--text)}
+h1,h2,h3{margin:.2em 0 .5em;font-weight:900;color:var(--ink)}
+header.top{background:linear-gradient(100deg,color-mix(in srgb,var(--primary) 55%,#ffc04d),var(--primary) 55%,color-mix(in srgb,var(--primary) 55%,#8b3df0));border-bottom:3px solid var(--ink);color:#fff;display:flex;align-items:center;gap:.5rem;padding:.6rem 1rem;flex-wrap:wrap}
+header.top a{color:#fff;text-decoration:none;padding:.4rem .9rem;border-radius:999px;font-weight:800;text-shadow:0 2px 0 rgba(45,27,61,.3)}
+header.top a.active,header.top a:hover{background:rgba(255,255,255,.25)}
+header.top .brand{font-weight:1000;font-size:1.25rem;margin-right:1rem;text-shadow:0 3px 0 var(--ink)}
+header.top .spacer{flex:1}
+main{max-width:60rem;margin:1.2rem auto;padding:0 1rem 4rem}
+.card{background:var(--card);border:3px solid var(--ink);border-radius:22px;padding:1.1rem;margin-bottom:1.1rem;box-shadow:0 5px 0 var(--ink)}
+.row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.grow{flex:1;min-width:10rem}
+.muted{color:var(--muted);font-size:.92rem;font-weight:600}
+label.f{display:block;font-weight:800;margin:.7rem 0 .2rem}
+input[type=text],input[type=password],input[type=number],select,textarea{width:100%;padding:.55rem .75rem;border:2.5px solid var(--ink);border-radius:14px;font:inherit;font-weight:700;background:#fff;color:inherit}
+input:focus,select:focus,textarea:focus{outline:3px solid var(--accent)}
+textarea{resize:vertical;min-height:4.5rem}
+button,.btn{font:inherit;font-weight:800;border:2.5px solid var(--ink);background:#fff;color:var(--ink);border-radius:14px;padding:.45rem .9rem;cursor:pointer;text-decoration:none;display:inline-block;box-shadow:0 3px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+button:hover,.btn:hover{background:#fff4d6}
+button:active,.btn:active{transform:translateY(3px);box-shadow:0 0 0 var(--ink)}
+button.primary,.btn.primary{background:linear-gradient(180deg,#ffe066,var(--accent))}
+button.primary:hover,.btn.primary:hover{background:linear-gradient(180deg,#ffe98a,#ffcb4d)}
+button.danger{color:var(--danger)}
+button.small,.btn.small{padding:.2rem .6rem;font-size:.9rem;border-radius:11px}
+button:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:.6rem .4rem;border-bottom:2px dashed var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.actions{display:flex;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
+.tabs button.active{background:var(--primary);color:#fff;text-shadow:0 2px 0 rgba(45,27,61,.35)}
+.setting{display:grid;grid-template-columns:minmax(10rem,18rem) 1fr;gap:.4rem 1rem;padding:.75rem 0;border-bottom:2px dashed var(--line);align-items:center}
+.setting .help{grid-column:1/-1;margin-top:-.2rem}
+@media(max-width:640px){.setting{grid-template-columns:1fr}}
+.slider{display:flex;gap:.8rem;align-items:center}
+.slider input{flex:1;accent-color:var(--primary)}
+.slider output{min-width:5.5rem;font-weight:900;color:var(--primary);text-align:right}
+.switch{position:relative;display:inline-block;width:50px;height:28px}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#d9cbb8;border:2.5px solid var(--ink);border-radius:28px;transition:.15s;cursor:pointer}
+.switch span:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:2px;background:#fff;border:2px solid var(--ink);border-radius:50%;transition:.15s}
+.switch input:checked+span{background:var(--ok)}
+.switch input:checked+span:before{transform:translateX(21px)}
+.note{background:#fff0c9;border:2.5px solid var(--ink);border-radius:16px;padding:.7rem .9rem;margin-bottom:.8rem;font-size:.92rem}
+.qcard{border-left:10px solid var(--primary)}
+.qcard .qhead{display:flex;gap:.4rem;align-items:center;margin-bottom:.4rem}
+.qcard .qhead h3{flex:1;margin:0}
+.opt{display:flex;gap:.5rem;align-items:center;margin:.4rem 0}
+.opt .tile{width:2.1rem;height:2.1rem;border-radius:50%;color:#fff;border:2.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex:none}
+.c0{background:#ff4d6d}.c1{background:#3d8bff}.c2{background:#ffb703}.c3{background:#23c26b}.c4{background:#9b5de5}.c5{background:#14c8c8}
+.opt label.ok{display:flex;align-items:center;gap:.3rem;white-space:nowrap;font-size:.9rem}
+.thumb{max-height:90px;max-width:160px;border-radius:12px;border:2.5px solid var(--ink)}
+.login{max-width:23rem;margin:14vh auto}
+#toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:var(--ink);color:#fff;padding:.65rem 1.1rem;border-radius:16px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9;font-weight:800}
+#toast.show{opacity:1}#toast.err{background:var(--danger)}
+.savebar{position:sticky;bottom:0;background:rgba(255,243,224,.96);padding:.7rem 0;border-top:3px solid var(--ink);display:flex;gap:.6rem;align-items:center}
+details>summary{cursor:pointer;font-weight:900}
+a{color:var(--primary)}

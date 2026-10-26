@@ -1,0 +1,9 @@
+# Zkopírujte do /etc/logrotate.d/kviz  (cestu upravte, pokud je aplikace jinde než v /var/www/kviz)
+/var/www/kviz/logs/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
