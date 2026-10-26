@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/img/banner.svg" alt="Queez – kvízová hra" width="720"></p>
+<p align="center"><img src="docs/img/logo.png" alt="Queez – kvízová hra" width="420"></p>
 
 # Kvíz – kvízová aplikace pro hraní s přáteli (PHP + SQLite)
 

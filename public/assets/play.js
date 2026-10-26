@@ -49,8 +49,8 @@ function showJoin(pin, message) {
   btn.addEventListener('click', go);
   nameIn.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
   shell(h('div', { class: 'p-wrap' }, h('div', { class: 'p-center' },
-    cfg.logo ? h('img', { src: '../' + cfg.logo, alt: '', style: 'max-height:5rem' }) : null,
-    h('div', { class: 'title-bubble' }, '🎲 ' + cfg.app_name),
+    cfg.logo ? h('img', { class: 'logo-join', src: '../' + cfg.logo, alt: cfg.app_name || '' }) : null,
+    cfg.logo ? null : h('div', { class: 'title-bubble' }, '🎲 ' + cfg.app_name),   // s logem se název neopakuje
     h('div', { class: 'card' },
       h('h1', {}, 'Připoj se ke hře! 🎉'),
       h('label', {}, 'PIN hry'), pinIn,

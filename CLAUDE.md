@@ -49,7 +49,7 @@ src/                 ← třídy (autoload podle názvu souboru, bez namespace)
 data/                ← SQLite, uploady, TTS cache, secrets/ (šifrovaný klíč) – zapisovatelné, MIMO web, není v Gitu
 logs/                ← error.log, není v Gitu
 config.php           ← tajné/startovací věci, není v Gitu (vzor config.example.php)
-deploy/ tools/ tests/ docs/ (docs/img/ = snímky obrazovek a banner.svg do README)
+deploy/ tools/ tests/ docs/ (docs/img/ = logo aplikace (logo.png) a snímky obrazovek do README)
 ```
 
 ### Třídy v `src/`

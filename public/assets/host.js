@@ -141,7 +141,7 @@ function shell(st, content, controls) {
       : null,
     h('div', { class: 'h-wrap' },
       h('div', { class: 'h-top' },
-        h('div', { class: 'title' }, (cfg.app_name || 'Kvíz') + (g.title ? ' – ' + g.title : '')),
+        h('div', { class: 'title' }, cfg.logo ? h('img', { class: 'logo-sm', src: '../' + cfg.logo, alt: '' }) : null, cfg.logo ? (g.title || '') : (cfg.app_name || 'Kvíz') + (g.title ? ' – ' + g.title : '')),
         h('div', { class: 'row' },
           h('span', { class: 'pill' }, 'PIN ' + g.pin), ' ',
           h('span', { class: 'pill' }, '👥 ' + g.players_count),
