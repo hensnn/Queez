@@ -18,13 +18,18 @@ const store = {
   clear() { try { localStorage.removeItem(LS_KEY); } catch (e) { /* nic */ } },
 };
 
-function shell(...content) {
+/** Zastaví běžící odpočet. Musí se volat PŘED vytvořením nové obrazovky (ta si spouští vlastní odpočet). */
+function stopTick() {
   if (stopTimer) { stopTimer(); stopTimer = null; }
+}
+
+function shell(...content) {
   put($app, !connOk ? h('div', { class: 'banner conn' }, 'Spojení ztraceno, zkouším znovu…') : null, content);
 }
 
 /* ---------- připojení ---------- */
 function showJoin(pin, message) {
+  stopTick();
   if (transport) { transport.stop(); transport = null; }
   const pinIn = h('input', { type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: 8, autocomplete: 'off', value: pin || '' });
   const nameIn = h('input', { type: 'text', maxlength: 20, autocomplete: 'nickname', placeholder: 'Např. Honza' });
@@ -85,6 +90,7 @@ function render(st) {
   const screen = st.phase + ':' + (st.question ? st.question.index : '-');
   $app.classList.toggle('still', screen === lastScreen);   // bez animací při pouhé aktualizaci stejné obrazovky
   lastScreen = screen;
+  stopTick();
   const body = ({ lobby: viewLobby, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoard, finished: viewFinished }[st.phase] || viewLobby)(st);
   shell(st.paused ? h('div', { class: 'banner' }, 'Hra je pozastavená') : null, body);
 }
@@ -215,10 +221,10 @@ function lbList(st) {
 
 function viewBoard(st) {
   return h('div', { class: 'p-wrap' }, head(st),
-    h('div', { class: 'big', style: 'text-align:center;margin:.5rem 0' }, 'Pořadí'),
+    h('div', { class: 'big', style: 'text-align:center;margin:.5rem 0' }, st.game.is_last ? '🏁 Konečné pořadí' : '📊 Průběžné pořadí'),
     lbList(st),
     h('div', { class: 'p-center', style: 'flex:0;margin-top:1rem' }, h('div', { class: 'big' }, 'Vy: ' + st.me.rank + '. místo'), h('div', {}, st.me.score + ' bodů')),
-    h('div', { class: 'p-center', style: 'flex:0;margin-top:1rem' }, 'Čekejte na další otázku…'));
+    h('div', { class: 'p-center', style: 'flex:0;margin-top:1rem' }, st.game.is_last ? 'Za chvíli se vyhlásí vítěz…' : 'Čekejte na další otázku…'));
 }
 
 function viewFinished(st) {

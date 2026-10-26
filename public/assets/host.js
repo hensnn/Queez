@@ -61,7 +61,7 @@ function phrasesFor(st) {
     if (r.explanation) out.push(r.explanation);
   } else if (st.phase === 'leaderboard' && t.read_leaderboard) {
     const top = (st.leaderboard || []).filter(r => r.rank <= 3);
-    out.push('Průběžné pořadí. ' + top.map(r => (r.rank === 1 ? 'První' : r.rank === 2 ? 'Druhé' : 'Třetí') + ' místo: ' + r.name + ', ' + CZ.points(r.score) + '.').join(' '));
+    out.push((st.game.is_last ? 'Konečné pořadí. ' : 'Průběžné pořadí. ') + top.map(r => (r.rank === 1 ? 'První' : r.rank === 2 ? 'Druhé' : 'Třetí') + ' místo: ' + r.name + ', ' + CZ.points(r.score) + '.').join(' '));
   } else if (st.phase === 'finished' && t.read_leaderboard) {
     const lb = st.leaderboard || [];
     const win = lb.filter(r => r.rank === 1);
@@ -268,7 +268,7 @@ function restList(lb, from) {
 function viewBoard(st) {
   const isLast = st.game.is_last;
   shell(st,
-    h('div', {}, h('div', { class: 'h-q' }, '📊 Pořadí'), podium(st.leaderboard), restList(st.leaderboard, 12)),
+    h('div', {}, h('div', { class: 'h-q' }, isLast ? '🏁 Konečné pořadí' : '📊 Průběžné pořadí'), podium(st.leaderboard), restList(st.leaderboard, 12)),
     [pauseButton(st), btn(isLast ? 'Ukončit hru ▶' : 'Další otázka ▶', () => control('next')), csvButton(), isLast ? null : endButton()]);
 }
 
