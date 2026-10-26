@@ -254,7 +254,7 @@ async function viewEditor(id) {
       };
       drawSlot();
       return h('div', { class: 'setting' },
-        h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, d.help)),
+        h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, (d.tab === 'tts' && d.group ? '🔊 Hlasatel – ' + d.group + ': ' : '') + d.help)),
         h('div', { class: 'row' },
           h('label', { class: 'row muted' }, h('input', { type: 'checkbox', checked: over, onchange: e => {
             if (e.target.checked) Q.settings[d.key] = S.values[d.key]; else delete Q.settings[d.key];
@@ -469,7 +469,7 @@ async function viewStart(id) {
   const over = {};
   let mode = 'screen';
   const rows = Object.values(S.defs).filter(d => d.quiz).map(d => h('div', { class: 'setting' },
-    h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, d.help)),
+    h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, (d.tab === 'tts' && d.group ? '🔊 Hlasatel – ' + d.group + ': ' : '') + d.help)),
     control(d, base[d.key], v => { over[d.key] = v; })));
   const modeSel = h('select', { onchange: e => { mode = e.target.value; } },
     h('option', { value: 'screen' }, 'Velká obrazovka (projektor / TV)'),
@@ -509,12 +509,15 @@ const edits = {};
 async function viewSettings(tab) {
   await loadSettings();
   const t = S.tabs.find(x => x.key === tab) || S.tabs[0];
-  const rows = Object.values(S.defs).filter(d => d.tab === t.key).map(d => {
+  let prevGroup = null;
+  const rows = Object.values(S.defs).filter(d => d.tab === t.key).flatMap(d => {
     const cur = d.key in edits ? edits[d.key] : S.values[d.key];
-    return h('div', { class: 'setting' },
+    const head = d.group && d.group !== prevGroup ? h('h3', { class: 'group' }, d.group) : null;
+    prevGroup = d.group || prevGroup;
+    return [head, h('div', { class: 'setting' },
       h('strong', {}, d.label),
       control(d, cur, v => { edits[d.key] = v; dirty = true; }),
-      d.help ? h('div', { class: 'help muted' }, d.help) : null);
+      d.help ? h('div', { class: 'help muted' }, d.help) : null)];
   });
   const extra = [];
   if (t.key === 'gemini') extra.push(await geminiKeyCard(), categoriesCard());

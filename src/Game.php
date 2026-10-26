@@ -582,6 +582,7 @@ final class Game
                 'total'               => (int)($s['_total'] ?? 0),
                 'is_last'             => $idx + 1 >= (int)($s['_total'] ?? 0),
                 'warn_seconds'        => (int)($s['warn_seconds'] ?? 5),
+                'letters'             => ($s['tts_option_letters'] ?? 'auto') === 'always' || (($s['tts_option_letters'] ?? 'auto') === 'auto' && $g['mode'] === 'voice'),
                 'lb_next'             => $phase === 'reveal' ? self::showLeaderboardAfter($g) : true,
                 'allow_change_answer' => !empty($s['allow_change_answer']),
                 'auto_advance'        => !empty($s['auto_advance']),
@@ -640,20 +641,36 @@ final class Game
         }
 
         if ($isHost) {
-            // nastavení předčítání pro prohlížeč moderátora
+            // nastavení hlasatele pro prohlížeč moderátora (co říkat a kdy)
+            $flag = fn(string $k, bool $def = false) => array_key_exists($k, $s) ? !empty($s[$k]) : $def;
             $out['tts'] = [
-                'enabled'          => !empty($s['tts_enabled']) || $g['mode'] === 'voice',
+                'enabled'          => $flag('tts_enabled') || $g['mode'] === 'voice',
                 'voice'            => (string)($s['tts_voice'] ?? ''),
                 'rate'             => (float)($s['tts_rate'] ?? 1),
-                'read_options'     => !empty($s['tts_read_options']),
-                'read_countdown'   => !empty($s['tts_read_countdown']),
-                'read_results'     => !empty($s['tts_read_results']),
-                'read_leaderboard' => !empty($s['tts_read_leaderboard']),
+                'pitch'            => (float)($s['tts_pitch'] ?? 1),
+                'volume'           => max(0.1, min(1.0, ((int)($s['tts_volume'] ?? 100)) / 100)),
+                'say_number'       => $flag('tts_say_number', true),
+                'say_type'         => $flag('tts_say_type', true),
+                'read_options'     => $flag('tts_read_options', true),
+                'say_points'       => $flag('tts_say_points'),
+                'say_limit'        => $flag('tts_say_limit'),
                 'read_delay'       => (int)($s['tts_read_delay'] ?? 2),
+                'read_countdown'   => $flag('tts_read_countdown', true),
+                'warn_half'        => $flag('tts_warn_half'),
+                'warn_final'       => $flag('tts_warn_final'),
+                'say_time_up'      => $flag('tts_say_time_up', true),
+                'read_results'     => $flag('tts_read_results', true),
+                'say_stats'        => $flag('tts_say_stats'),
+                'say_explanation'  => $flag('tts_say_explanation', true),
+                'read_leaderboard' => $flag('tts_read_leaderboard', true),
+                'lb_top'           => max(1, min(10, (int)($s['tts_lb_top'] ?? 3))),
+                'say_scores'       => $flag('tts_say_scores', true),
+                'say_winner'       => $flag('tts_say_winner', true),
+                'say_start'        => $flag('tts_say_start'),
+                'say_pause'        => $flag('tts_say_pause'),
                 'gemini'           => Tts::available($s),
             ];
         }
-
         if ($phase === 'lobby' && $isHost) {
             $out['players'] = Db::all('SELECT id, name FROM players WHERE game_id=? AND kicked=0 ORDER BY id LIMIT 300', [$gid]);
         }

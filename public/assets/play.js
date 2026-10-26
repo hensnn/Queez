@@ -151,7 +151,7 @@ function viewQuestion(st) {
           }
         },
       }, h('span', { class: 'shape' }, SHAPES[o.pos]),
-      o.text !== null ? h('span', { class: 'letter' }, 'ABCDEF'[o.pos]) : null,
+      st.game.letters && o.text !== null ? h('span', { class: 'letter' }, 'ABCDEF'[o.pos]) : null,
       o.text !== null ? h('span', { class: 'tx' }, o.text) : null,
       cnt !== null ? h('span', { class: 'cnt' }, cnt) : null);
     }));

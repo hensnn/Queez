@@ -93,6 +93,8 @@ const Speech = {
       u.lang = 'cs-CZ';
       if (voice) u.voice = voice;
       u.rate = this.cfg.rate || 1;
+      u.pitch = this.cfg.pitch || 1;
+      u.volume = this.cfg.volume === undefined ? 1 : this.cfg.volume;
       let done = false;
       const fin = r => { if (done) return; done = true; clearTimeout(watchdog); resolve(r); };
       u.onend = () => fin('ok');
@@ -123,6 +125,7 @@ const Speech = {
       if (tok !== this.token) return { spoken: false, cancelled: true };
       const a = new Audio(url);
       a.playbackRate = this.cfg.rate || 1;
+      a.volume = this.cfg.volume === undefined ? 1 : this.cfg.volume;
       this.audio = a;
       await a.play();
       await new Promise(res => { a.onended = res; a.onerror = res; a.onpause = res; });

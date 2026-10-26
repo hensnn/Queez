@@ -185,11 +185,12 @@ Při spuštění hry zvolte **Režim zobrazení → Bez obrazovky – hlasový r
 - Odkaz na obrazovku moderátora otevřete **v mobilu** a ten připojte k Bluetooth reproduktoru.
 - Hráči vidí text otázky i odpovědí na svých telefonech (u odpovědí jsou písmena A–F).
 - Telefon moderátora nahlas čte otázku a možnosti, „zbývá pět sekund“, správnou odpověď, průběžné pořadí (top 3) a vítěze.
-- Odpočet začne až po dočtení otázky (+ prodleva z Nastavení → TTS).
+- Odpočet začne až po dočtení otázky (+ prodleva z Nastavení → Hlasatel (TTS)).
 - Tlačítka: **Start / Další / Pauza / 🔁 Zopakovat / 🔊 Hlas zapnut·vypnut / Přeskočit čtení**.
+- **Co všechno hlasatel říká a kdy** nastavíte v Nastavení → Hlasatel (TTS): číslo otázky, typ, možnosti (i s písmeny A–F), body a časový limit, upozornění na čas (polovina, před koncem, odpočet 3-2-1, „čas vypršel“), správnou odpověď, statistiku, vysvětlení, pořadí (kolik míst, s body či bez), vítěze, začátek hry a pauzu. Většinu voleb jde přepsat u kvízu i při spuštění hry.
 - Prohlížeče povolí hlas až po klepnutí, proto hru začněte tlačítkem Start. Když hlas zablokují, ukáže se tlačítko „Povolit hlas“.
 - Zařízení moderátora musí mít **český hlas** (Android: Nastavení → Převod textu na řeč; iPhone má hlas „Zuzana“).
-  Bez něj lze zapnout záložní **Gemini TTS** (`gemini_tts_enabled` v `config.php` a Nastavení → TTS).
+  Bez něj lze zapnout záložní **Gemini TTS** (`gemini_tts_enabled` v `config.php` a Nastavení → Hlasatel (TTS)).
 
 ---
 

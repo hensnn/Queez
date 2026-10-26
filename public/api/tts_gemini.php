@@ -8,7 +8,7 @@ try {
     $in = Http::input();
     $g = Game::requireHost(trim((string)($in['pin'] ?? '')), (string)($in['key'] ?? ''));
     if (!Tts::available($g['s'])) {
-        Http::fail(403, 'tts_off', 'Serverové TTS není zapnuté (config.php + Nastavení → TTS).');
+        Http::fail(403, 'tts_off', 'Serverové TTS není zapnuté (config.php + Nastavení → Hlasatel (TTS)).');
     }
     if (RateLimit::hit('tts:' . $g['pin'], 60) > 90) {
         Http::fail(429, 'rate_limit', 'Příliš mnoho požadavků na TTS.');

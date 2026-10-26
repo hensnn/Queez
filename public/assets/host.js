@@ -26,47 +26,93 @@ async function control(action, extra) {
   if (transport) transport.poke();
 }
 
-/* ---------- předčítání ---------- */
-let spokenKey = null;      // fáze + číslo otázky, pro které už se četlo
+/* ---------- hlasatel ---------- */
+let spokenKey = null;        // fáze + číslo otázky, pro které už se četlo
 let firstState = true;
-const warned = new Set();  // otázky, u kterých už zaznělo „zbývá 5 sekund“
+let lastQuestionState = null; // poslední stav fáze „question“ (pro „čas vypršel“)
+let prevPaused = null;
+const cuesSaid = new Map();   // číslo otázky → množina už vyslovených časových upozornění
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/** „Zbývá pět sekund.“ / „Zbývá 12 sekund.“ (správné skloňování) */
+const NUM = { 1: 'jedna', 2: 'dvě', 3: 'tři', 4: 'čtyři', 5: 'pět', 6: 'šest', 7: 'sedm', 8: 'osm', 9: 'devět', 10: 'deset',
+  11: 'jedenáct', 12: 'dvanáct', 13: 'třináct', 14: 'čtrnáct', 15: 'patnáct', 16: 'šestnáct', 17: 'sedmnáct', 18: 'osmnáct',
+  19: 'devatenáct', 20: 'dvacet', 30: 'třicet', 40: 'čtyřicet', 45: 'čtyřicet pět', 50: 'padesát', 60: 'šedesát', 90: 'devadesát', 120: 'sto dvacet' };
+const ORD = { 1: 'První', 2: 'Druhé', 3: 'Třetí', 4: 'Čtvrté', 5: 'Páté', 6: 'Šesté', 7: 'Sedmé', 8: 'Osmé', 9: 'Deváté', 10: 'Desáté' };
+
+/** „dvacet sekund“, „tři sekundy“ (správné skloňování) */
+function secondsText(n) {
+  return (NUM[n] || String(n)) + (n === 1 ? ' sekunda' : n >= 2 && n <= 4 ? ' sekundy' : ' sekund');
+}
+/** „Zbývá pět sekund.“ / „Zbývají tři sekundy.“ */
 function remainingPhrase(n) {
-  const words = { 1: 'jedna sekunda', 2: 'dvě sekundy', 3: 'tři sekundy', 4: 'čtyři sekundy', 5: 'pět sekund', 6: 'šest sekund',
-    7: 'sedm sekund', 8: 'osm sekund', 9: 'devět sekund', 10: 'deset sekund', 15: 'patnáct sekund', 20: 'dvacet sekund', 30: 'třicet sekund' };
-  const w = words[n] || (n + (n >= 2 && n <= 4 ? ' sekundy' : ' sekund'));
-  return (n === 1 ? 'Zbývá ' : n >= 2 && n <= 4 ? 'Zbývají ' : 'Zbývá ') + w + '.';
+  return (n >= 2 && n <= 4 ? 'Zbývají ' : 'Zbývá ') + secondsText(n) + '.';
 }
 
-function phrasesFor(st) {
-  const t = st.tts, q = st.question, voice = st.mode === 'voice';
+/**
+ * Časové upozornění pro otázku s běžícím odpočtem (nebo null). Každé zazní nejvýše jednou za otázku;
+ * když se čas „přeskočí“ (např. po pauze), řekne se jen nejnovější.
+ */
+function timeCue(st, r) {
+  const t = st.tts, q = st.question;
+  const limit = q.time_limit * 1000;
+  const warn = (st.game.warn_seconds || 5) * 1000;
+  if (r === null || r <= 0 || limit <= 0) return null;
+  let said = cuesSaid.get(q.index);
+  if (!said) { said = new Set(); cuesSaid.set(q.index, said); }
+  const cues = [
+    { id: 'half', cond: t.warn_half && limit >= 20000 && r <= limit / 2 && r > warn + 1500, text: 'Zbývá polovina času.' },
+    { id: 'warn', cond: t.read_countdown && limit >= warn + 2000 && r <= warn, text: remainingPhrase(Math.round(warn / 1000)) },
+    ...[3, 2, 1].map(n => ({ id: 'f' + n, cond: t.warn_final && limit >= warn + 2000 && n * 1000 < warn && r <= n * 1000, text: ({ 3: 'Tři.', 2: 'Dva.', 1: 'Jedna.' })[n] })),
+  ];
+  let text = null;
+  for (const c of cues) {
+    if (c.cond && !said.has(c.id)) { said.add(c.id); text = c.text; }
+  }
+  return text;
+}
+
+/** Věty, které hlasatel řekne v dané fázi (podle nastavení). ctx: {first, timeUp} */
+function phrasesFor(st, ctx) {
+  ctx = ctx || {};
+  const t = st.tts, q = st.question, g = st.game;
   if (!t) return [];
-  const lbl = o => (voice ? CZ.letters[o.pos] + ': ' : '');
+  const lbl = o => (g.letters ? CZ.letters[o.pos] + ': ' : '');
   const out = [];
   if (st.phase === 'question') {
-    out.push((q.type === 'poll' ? 'Anketa. ' : 'Otázka číslo ' + (q.index + 1) + '. ') + q.text);
+    if (ctx.first && t.say_start) out.push('Hra začíná, hodně štěstí!');
+    out.push((t.say_number ? 'Otázka číslo ' + (q.index + 1) + '. ' : '') + (t.say_type && q.type === 'poll' ? 'Anketa. ' : '') + q.text);
+    const multiNote = t.say_type && q.multi ? 'Může být více správných odpovědí.' : '';
     if (t.read_options) {
       if (q.type === 'truefalse') out.push('Pravda, nebo nepravda?');
-      else out.push((q.multi ? 'Může být více správných odpovědí. ' : '') + 'Možnosti: ' + q.options.map(o => lbl(o) + o.text).join('. ') + '.');
-    }
-  } else if (st.phase === 'reveal' && t.read_results) {
+      else out.push((multiNote ? multiNote + ' ' : '') + 'Možnosti: ' + q.options.map(o => lbl(o) + o.text).join('. ') + '.');
+    } else if (multiNote) out.push(multiNote);
+    if (t.say_points && q.type !== 'poll' && q.points > 0) out.push('Za správnou odpověď je ' + CZ.points(q.points) + '.');
+    if (t.say_limit && q.time_limit > 0) out.push('Na odpověď máte ' + secondsText(q.time_limit) + '.');
+  } else if (st.phase === 'reveal') {
     const r = st.reveal;
-    if (q.type === 'poll') out.push('Hlasování skončilo.');
-    else {
-      const cor = q.options.filter(o => r.correct.includes(o.pos));
-      out.push((cor.length > 1 ? 'Správné odpovědi: ' : 'Správná odpověď: ') + cor.map(o => lbl(o) + o.text).join('. ') + '.');
+    if (ctx.timeUp && t.say_time_up) out.push('Čas vypršel.');
+    if (t.read_results) {
+      if (q.type === 'poll') out.push('Hlasování skončilo.');
+      else {
+        const cor = q.options.filter(o => r.correct.includes(o.pos));
+        out.push((cor.length > 1 ? 'Správné odpovědi: ' : 'Správná odpověď: ') + cor.map(o => lbl(o) + o.text).join('. ') + '.');
+      }
     }
-    if (r.explanation) out.push(r.explanation);
+    if (t.say_stats && r.counts && q.type !== 'poll' && !q.multi) {   // jen když smí moderátor rozložení vidět
+      const total = r.counts.reduce((a, b) => a + b, 0);
+      const ok = r.correct.reduce((a, p) => a + (r.counts[p] || 0), 0);
+      if (total > 0) out.push('Správných odpovědí: ' + ok + ' z ' + total + '.');
+    }
+    if (t.say_explanation && r.explanation) out.push(r.explanation);
   } else if (st.phase === 'leaderboard' && t.read_leaderboard) {
-    const top = (st.leaderboard || []).filter(r => r.rank <= 3);
-    out.push((st.game.is_last ? 'Konečné pořadí. ' : 'Průběžné pořadí. ') + top.map(r => (r.rank === 1 ? 'První' : r.rank === 2 ? 'Druhé' : 'Třetí') + ' místo: ' + r.name + ', ' + CZ.points(r.score) + '.').join(' '));
-  } else if (st.phase === 'finished' && t.read_leaderboard) {
+    const top = (st.leaderboard || []).slice(0, t.lb_top || 3);
+    out.push((g.is_last ? 'Konečné pořadí. ' : 'Průběžné pořadí. ') + top.map(r =>
+      (ORD[r.rank] || r.rank + '.') + ' místo: ' + r.name + (t.say_scores ? ', ' + CZ.points(r.score) : '') + '.').join(' '));
+  } else if (st.phase === 'finished' && t.say_winner) {
     const lb = st.leaderboard || [];
     const win = lb.filter(r => r.rank === 1);
     if (win.length) {
-      out.push('Konec hry. ' + (win.length > 1 ? 'Vítězi jsou ' : 'Vítězem je ') + CZ.join(win.map(r => r.name)) + ', ' + CZ.points(win[0].score) + '.');
+      out.push('Konec hry. ' + (win.length > 1 ? 'Vítězi jsou ' : 'Vítězem je ') + CZ.join(win.map(r => r.name)) + (t.say_scores ? ', ' + CZ.points(win[0].score) : '') + '.');
       const sec = lb.filter(r => r.rank === 2), thr = lb.filter(r => r.rank === 3);
       if (sec.length) out.push('Druhé místo: ' + CZ.join(sec.map(r => r.name)) + '.');
       if (thr.length) out.push('Třetí místo: ' + CZ.join(thr.map(r => r.name)) + '.');
@@ -75,8 +121,8 @@ function phrasesFor(st) {
   return out;
 }
 
-async function speakPhase(st, startCountdown) {
-  const phrases = phrasesFor(st);
+async function speakPhase(st, startCountdown, ctx) {
+  const phrases = phrasesFor(st, ctx);
   const key = spokenKey;
   const t0 = Date.now();
   const res = await Promise.all(phrases.map(p => Speech.say(p)));
@@ -104,7 +150,21 @@ function handleSpeech(st) {
   Speech.cancel();
   const reading = st.phase === 'question' && st.question.reading;
   if (wasFirst && !reading) return;   // po obnovení stránky už rozehranou fázi znovu nečteme
-  speakPhase(st, reading);
+  const ctx = { first: st.phase === 'question' && st.question.index === 0 };
+  if (st.phase === 'reveal') {
+    const lq = lastQuestionState;   // otázka skončila vypršením limitu, ne dřívějším uzavřením
+    ctx.timeUp = !!(lq && lq.question && lq.question.index === st.question.index && lq.question.ends_at
+      && Clock.now() >= lq.question.ends_at - 1500);
+  }
+  speakPhase(st, reading, ctx);
+}
+
+/** Hlášení pauzy a pokračování. */
+function handlePause(st) {
+  if (prevPaused !== null && st.paused !== prevPaused && st.tts && st.tts.say_pause) {
+    Speech.say(st.paused ? 'Hra je pozastavena.' : 'Pokračujeme.');
+  }
+  prevPaused = st.paused;
 }
 
 function repeatSpeech() {
@@ -113,7 +173,6 @@ function repeatSpeech() {
   Speech.cancel();
   speakPhase(last, false);
 }
-
 function ttsButtons(st) {
   if (!st.tts) return [];
   const out = [];
@@ -203,7 +262,7 @@ function tilesFor(q, r, counts) {
     const who = votes ? votes.filter(v => v.choice.includes(o.pos)).map(v => v.name).join(', ') : '';
     return h('div', { class: 'tile c' + o.pos + (ok ? ' ok' : '') + (dim ? ' dim' : '') },
       h('span', { class: 'shape' }, SHAPES[o.pos]),
-      last && last.mode === 'voice' ? h('span', { class: 'letter' }, CZ.letters[o.pos]) : null,
+      last && last.game && last.game.letters ? h('span', { class: 'letter' }, CZ.letters[o.pos]) : null,
       h('span', { class: 'tx' }, o.text, who ? h('span', { class: 'who' }, who) : null),
       c !== null ? h('span', { class: 'cnt' }, c) : null,
       c !== null && total > 0 ? h('span', { class: 'bar', style: 'width:' + Math.round(100 * c / total) + '%' }) : null);
@@ -295,20 +354,18 @@ function onState(st) {
   connOk = true;
   if (st.tts) Speech.setConfig(st.tts);
   render(st);
+  handlePause(st);
   handleSpeech(st);
+  if (st.phase === 'question') lastQuestionState = st;
 }
 
-// „Zbývá 5 sekund“ – hlásí se jednou za otázku, jen při běžícím odpočtu
+// Časová upozornění (polovina času, před koncem, odpočet 3-2-1) – jen při běžícím odpočtu
 setInterval(() => {
   const st = last;
-  if (!st || st.phase !== 'question' || st.paused || st.question.reading || !st.tts || !st.tts.read_countdown || !Speech.on) return;
-  const q = st.question;
-  const warn = st.game.warn_seconds || 5;
-  if (q.time_limit < warn + 2 || warned.has(q.index)) return;
-  const r = remainingMs(q, false);
-  if (r !== null && r > 0 && r <= warn * 1000) { warned.add(q.index); Speech.say(remainingPhrase(warn)); }
-}, 300);
-
+  if (!st || st.phase !== 'question' || st.paused || st.question.reading || !st.tts || !Speech.on) return;
+  const cue = timeCue(st, remainingMs(st.question, false));
+  if (cue) Speech.say(cue);
+}, 250);
 /* ---------- start ---------- */
 (async () => {
   if (!/^\d{4,8}$/.test(PIN) || !KEY) {

@@ -105,6 +105,13 @@ Klient má vrstvu `PollTransport` (`common.js`) – kvůli případné výměně
 - Hodnoty jsou v tabulce `settings` (JSON). Příznak `'quiz' => true` = lze přepsat v kvízu (`quizzes.settings_json`) i při spuštění hry.
 - **Nové nastavení:** přidat do `defs()`, použít v kódu přes `$g['s']['klic']` (hra) nebo `Settings::get()`; UI nic dalšího nepotřebuje.
 
+### Hlasatel (TTS)
+
+- Mluví **prohlížeč moderátora** (`host.js`), server posílá jen nastavení v `state.tts` (hodnoty `tts_*` ze zmrazeného nastavení hry; skládá je `Game::state()`) a `game.letters` (písmena A–F u odpovědí podle `tts_option_letters`).
+- **Co a kdy říct** určují `phrasesFor(st, ctx)` (věty pro fázi: otázka, odhalení, pořadí, konec) a `timeCue(st, r)` (časová upozornění: polovina času, před koncem, odpočet 3-2-1; každé jednou za otázku, při skoku času jen nejnovější). Obě jsou čisté funkce, dají se zkoušet v konzoli.
+- Další spouštěče: začátek hry (`ctx.first`), „čas vypršel“ (`ctx.timeUp` – otázka skončila vypršením `ends_at`), pauza/pokračování (`handlePause`).
+- Fronta vět a výběr hlasu je v `tts.js` (`Speech`); u zařízení bez českého hlasu záložní Gemini TTS (`api/tts_gemini.php`).
+- Nastavení hlasatele (záložka *Hlasatel (TTS)*) se v adminu seskupuje podle klíče `group` v `Settings::defs()`. Obsahové volby mají `'quiz' => true` (jdou přepsat u kvízu i při spuštění hry); hlas, rychlost, výška a hlasitost jsou globální (závisí na zařízení).
 ### Bodování (`Scoring::evaluate`)
 
 `základ × (1 − R × čas/limit)` + `streak_bonus × min(série_před_otázkou, streak_max)`; více správných: `all_or_nothing` / `proportional`; anketa = 0 bodů a série se nepřeruší.

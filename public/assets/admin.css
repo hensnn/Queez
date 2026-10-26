@@ -85,3 +85,5 @@ img{max-width:100%}
   .slider output{min-width:4rem}
   .row.between{gap:.4rem}
 }
+h3.group{margin:1.2rem 0 .2rem;padding-bottom:.3rem;border-bottom:3px solid var(--ink);font-size:1.1rem}
+h3.group:first-child{margin-top:.2rem}
