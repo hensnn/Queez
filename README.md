@@ -9,6 +9,27 @@ hráči odpovídají na svých telefonech. Celé rozhraní je česky.
 
 ---
 
+## Ukázky
+
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="docs/img/host-lobby.jpg" alt="Obrazovka moderátora: QR kód, PIN a připojení hráči"><br><sub>Obrazovka moderátora – QR kód, PIN a hráči v lobby</sub></td>
+    <td align="center" width="50%"><img src="docs/img/host-question.jpg" alt="Obrazovka moderátora: otázka s odpočtem a odpověďmi"><br><sub>Otázka s odpočtem a barevnými odpověďmi</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/host-leaderboard.jpg" alt="Pořadí hráčů na stupních vítězů"><br><sub>Pořadí hráčů na stupních vítězů</sub></td>
+    <td align="center"><img src="docs/img/admin-settings.jpg" alt="Administrace: nastavení hry s posuvníky a přepínači"><br><sub>Administrace – nastavení hry</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="docs/img/player-question.jpg" width="260" alt="Telefon hráče: otázka a barevná tlačítka"><br><sub>Telefon hráče – otázka</sub></td>
+    <td align="center" width="50%"><img src="docs/img/player-correct.jpg" width="260" alt="Telefon hráče: správná odpověď a body"><br><sub>Telefon hráče – správná odpověď</sub></td>
+  </tr>
+</table>
+> **Vývoj a další úpravy:** architektura, konvence, testy a postup aktualizace jsou popsané v [CLAUDE.md](CLAUDE.md); původní zadání v [docs/ZADANI.md](docs/ZADANI.md).
+
 ## 1. Co budete potřebovat
 
 - Linuxový server nebo kontejner (popis je pro **Debian 12**) s webovým serverem **Caddy**.
@@ -272,6 +293,9 @@ kviz/
   logs/                 ← error.log
   deploy/               ← php-fpm-kviz.conf, npm-advanced.conf, logrotate-kviz, cron-kviz-backup
   tools/                ← loadtest.php, backup.php
+  tests/                ← run.php (integrační test hry přes API)
+  docs/                 ← ZADANI.md (původní zadání), NAVRH-puvodni.md (historický návrh)
+  CLAUDE.md             ← průvodce pro vývoj
   config.example.php    ← vzor konfigurace (config.php vytvoříte kopií)
   Caddyfile.example     ← blok pro Caddy
   README.md
@@ -282,3 +306,8 @@ Použité součásti třetích stran:
 - Písmo Nunito `public/assets/fonts/` – SIL Open Font License 1.1.
 
 Ukázkový kvíz k importu (Admin → Kvízy → Import JSON): `examples/kviz-hospodsky-vseobecny.json`.
+
+## Licence
+
+Projekt je zveřejněn pod licencí **MIT** – viz soubor [LICENSE](LICENSE).
+Součásti třetích stran mají vlastní licence: QR knihovna `public/assets/vendor/qrcode.js` (MIT, Kazuhiko Arase) a písmo Nunito v `public/assets/fonts/` (SIL Open Font License 1.1).

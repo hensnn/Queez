@@ -1,3 +1,5 @@
+> **Historický dokument – počáteční návrh (etapa 1).** Skutečná implementace se v detailech liší (např. neexistují `rejoin.php`, `quiz_reorder.php`, `host_settings.php`; ovládání moderátora je v `host_control.php`, správa kvízů v `admin_quiz.php` / `admin_quizzes.php`). Aktuální popis architektury je v `CLAUDE.md`.
+
 # Návrh – etapa 1: DB schéma a API
 
 ## 1. Principy
