@@ -203,7 +203,7 @@ function viewReveal(st) {
   const isPoll = q.type === 'poll';
   const tiles = h('div', { class: 'tiles n' + q.options.length + (q.options.some(o => o.text !== null) ? ' txt' : '') + layoutClass(st), style: 'flex:0' },
     q.options.map(o => h('div', {
-      class: 'tile c' + o.pos + (!isPoll && r.correct.includes(o.pos) ? ' ok' : (!isPoll ? ' dim' : '')) + (mine.includes(o.pos) ? ' sel' : ''),
+      class: 'tile c' + o.pos + (!isPoll && r.correct.includes(o.pos) ? ' ok' : (!isPoll ? ' dim' : '')) + (mine.includes(o.pos) ? ' sel' : '') + (!isPoll && mine.includes(o.pos) && !r.correct.includes(o.pos) ? ' bad' : ''),   // vybraná špatná odpověď = křížek
       style: 'min-height:4rem',
     }, h('span', { class: 'shape' }, SHAPES[o.pos]), o.text !== null ? h('span', { class: 'tx' }, o.text) : null,
     r.counts ? h('span', { class: 'cnt' }, r.counts[o.pos]) : null)));

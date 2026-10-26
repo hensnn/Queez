@@ -92,6 +92,9 @@ button.tile:active:not(:disabled){transform:translateY(7px);box-shadow:0 2px 0 v
 .tile.ok{box-shadow:0 0 0 6px var(--ok),0 9px 0 6px var(--ink)}
 .tile.ok::after{content:"✔";position:absolute;top:-.8rem;right:-.5rem;width:2.1rem;height:2.1rem;border-radius:50%;background:var(--ok);color:#fff;border:3px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.1rem;text-shadow:none}
 .tile.dim{opacity:.4;filter:grayscale(.5)}
+/* Po odhalení: špatně vybraná odpověď má červený křížek místo fajfky a není zeslabená */
+.tile.sel.bad::before{content:"✘";background:var(--bad)}
+.tile.dim.sel.bad{opacity:.85;filter:none}
 .tile .cnt{position:absolute;right:.7rem;bottom:.4rem;font-size:1rem;background:var(--cream);color:var(--ink);border:2px solid var(--ink);border-radius:999px;padding:0 .55rem;text-shadow:none}
 .tile .who{display:block;font-size:.85rem;font-weight:700;opacity:.95;margin-top:.2rem;max-height:2.6em;overflow:hidden}
 
