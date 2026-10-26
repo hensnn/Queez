@@ -329,6 +329,11 @@ final class Gemini
             } else { // poll
                 $opts = array_slice($opts, 0, max(2, $p['answers']));
             }
+            // Gemini rád dává správnou odpověď na stejné místo (často první) → pořadí odpovědí se zamíchá.
+            // Pravda/nepravda se nemíchá (vždy Pravda, Nepravda).
+            if ($type !== 'truefalse') {
+                shuffle($opts);
+            }
             $cand = [
                 'type'        => $type,
                 'text'        => (string)($q['text'] ?? ''),

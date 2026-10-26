@@ -222,6 +222,14 @@ function setType(q, type) {
   }
 }
 
+/** Náhodně zamíchá pořadí odpovědí otázky (Fisher–Yates). Pravda/nepravda se nemíchá. */
+function shuffleOptions(q) {
+  if (q.type === 'truefalse') return;
+  for (let i = q.options.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [q.options[i], q.options[j]] = [q.options[j], q.options[i]];
+  }
+}
 let DRAFT = null;      // návrh otázek z Gemini předaný editoru: {title, category_id, questions}
 let lastGen = null;    // poslední parametry generování (pro přegenerování jedné otázky)
 
@@ -313,6 +321,7 @@ async function viewEditor(id) {
           n.time_limit = q.time_limit; n.points = q.type === 'poll' ? null : q.points;
           Q.questions[i] = n; dirty = true; drawQs(); toast('Otázka přegenerována.');
         }) }, '↻ Přegenerovat') : null,
+        q.type === 'truefalse' ? null : h('button', { class: 'small', title: 'Zamíchat pořadí odpovědí', onclick: () => { shuffleOptions(q); touch(); drawQs(); } }, '🔀'),
         h('button', { class: 'small', title: 'Nahoru', onclick: move(-1), disabled: i === 0 }, '↑'),
         h('button', { class: 'small', title: 'Dolů', onclick: move(1), disabled: i === Q.questions.length - 1 }, '↓'),
         h('button', { class: 'small', title: 'Duplikovat', onclick: () => { Q.questions.splice(i + 1, 0, JSON.parse(JSON.stringify(q))); touch(); drawQs(); } }, '⧉'),
@@ -356,6 +365,7 @@ async function viewEditor(id) {
       setBox),
     qBox,
     h('div', { class: 'savebar' }, h('button', { class: 'primary', onclick: save }, 'Uložit kvíz'),
+      h('button', { title: 'Náhodně zamíchá pořadí odpovědí ve všech otázkách (pravda/nepravda zůstává)', onclick: () => { Q.questions.forEach(shuffleOptions); touch(); drawQs(); toast('Pořadí odpovědí zamícháno. Nezapomeňte kvíz uložit.'); } }, '🔀 Zamíchat odpovědi ve všech otázkách'),
       h('span', { class: 'muted' }, 'Změny se projeví až po uložení.')),
   ]);
 }
@@ -521,7 +531,7 @@ async function viewSettings(tab) {
   });
   const extra = [];
   if (t.key === 'gemini') extra.push(await geminiKeyCard(), categoriesCard());
-  if (t.key === 'tts') extra.push(voiceTestCard());
+  if (t.key === 'tts') extra.push(voiceTestCard(), beepTestCard());
   if (t.key === 'maintenance') extra.push(maintenanceCard());
 
   layout('settings', [
@@ -545,6 +555,23 @@ async function viewSettings(tab) {
   ]);
 }
 
+/** Ukázka pípání podle aktuálních (i neuložených) hodnot v nastavení. */
+function beepTestCard() {
+  const val = k => (k in edits ? edits[k] : S.values[k]);
+  const btn = h('button', {}, '▶ Přehrát ukázku pípání');
+  const msg = h('span', { class: 'muted' }, '');
+  btn.addEventListener('click', () => {
+    if (btn.dataset.playing) { Beeper.stop(); btn.textContent = '▶ Přehrát ukázku pípání'; delete btn.dataset.playing; msg.textContent = ''; return; }
+    const cfg = { seconds: val('beep_seconds'), style: val('beep_style'), final: !!val('beep_final'), volume: val('beep_volume') / 100 };
+    if (!Beeper.supported()) { msg.textContent = 'Tento prohlížeč zvuk nepodporuje.'; return; }
+    btn.dataset.playing = '1'; btn.textContent = '■ Zastavit';
+    msg.textContent = 'Hraje ' + cfg.seconds + ' pípnutí' + (cfg.final ? ' a závěrečný tón' : '') + '…';
+    Beeper.preview(cfg, () => { btn.textContent = '▶ Přehrát ukázku pípání'; delete btn.dataset.playing; msg.textContent = 'Hotovo.'; });
+  });
+  return h('div', { class: 'card' }, h('h3', {}, 'Vyzkoušet pípání'),
+    h('p', { class: 'muted' }, 'Přehraje sekvenci podle hodnot výše (i neuložených) tak, jak zazní před koncem času na zařízení moderátora. Hlasitost zařízení si nastavte sami.'),
+    h('div', { class: 'row' }, btn, msg));
+}
 /** Výběr a vyzkoušení hlasu v tomto prohlížeči (hlasy závisí na zařízení; moderátorův telefon může mít jiné). */
 function voiceTestCard() {
   const box = h('div', { class: 'card' });

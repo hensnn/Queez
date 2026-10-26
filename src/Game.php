@@ -671,6 +671,14 @@ final class Game
                 'say_pause'        => $flag('tts_say_pause'),
                 'gemini'           => Tts::available($s),
             ];
+            // zvukový signál (pípání) před koncem času
+            $out['beep'] = [
+                'enabled' => !empty($s['beep_enabled']),
+                'seconds' => max(3, min(30, (int)($s['beep_seconds'] ?? 10))),
+                'style'   => in_array($s['beep_style'] ?? 'lengthening', ['lengthening', 'rising', 'steady'], true) ? $s['beep_style'] : 'lengthening',
+                'final'   => array_key_exists('beep_final', $s) ? !empty($s['beep_final']) : true,
+                'volume'  => max(0.1, min(1.0, ((int)($s['beep_volume'] ?? 60)) / 100)),
+            ];
         }
         if ($phase === 'lobby' && $isHost) {
             $out['players'] = Db::all('SELECT id, name FROM players WHERE game_id=? AND kicked=0 ORDER BY id LIMIT 300', [$gid]);

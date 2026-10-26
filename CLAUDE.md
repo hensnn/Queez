@@ -113,6 +113,17 @@ Klient má vrstvu `PollTransport` (`common.js`) – kvůli případné výměně
 - Další spouštěče: začátek hry (`ctx.first`), „čas vypršel“ (`ctx.timeUp` – otázka skončila vypršením `ends_at`), pauza/pokračování (`handlePause`).
 - Fronta vět a výběr hlasu je v `tts.js` (`Speech`); u zařízení bez českého hlasu záložní Gemini TTS (`api/tts_gemini.php`).
 - Nastavení hlasatele (záložka *Hlasatel (TTS)*) se v adminu seskupuje podle klíče `group` v `Settings::defs()`. Obsahové volby mají `'quiz' => true` (jdou přepsat u kvízu i při spuštění hry); hlas, rychlost, výška a hlasitost jsou globální (závisí na zařízení).
+### Pípání (zvukový signál před koncem času)
+
+- `public/assets/beeper.js` (`Beeper`): tóny přes Web Audio API (bez souborů a bez řeči). Styly `lengthening` (100 → 600 ms), `rising` (600 → 1500 Hz), `steady`; jedno pípnutí za vteřinu od `beep_seconds` před koncem; volitelně závěrečný dlouhý tón (440 Hz, 1 s) po vypršení.
+- Nastavení `beep_*` (záložka Hlasatel (TTS), skupina „Zvukový signál před koncem“) přichází hostovi ve `state.beep`; hráči ho nedostávají. Zvuk hraje jen **zařízení moderátora**.
+- Logika času je v `host.js` (`beepTick(st, r)`): každé pípnutí jednou za otázku, po skoku času (pauza) jen nejnovější; závěrečný tón se spustí i při přepnutí na odhalení dřív, než tiká časovač. Moderátor pípání vypíná tlačítkem 🔔 (`localStorage kviz_beep`).
+- Prohlížeč povolí zvuk až po klepnutí (`Beeper.unlock()` při každé interakci); jinak se zobrazí lišta „Povolit zvuk“.
+- Ukázka v administraci (`beepTestCard`) přehraje sekvenci podle aktuálních, i neuložených hodnot.
+
+### Generování otázek: pořadí odpovědí
+
+`Gemini::normalize()` odpovědi u `choice` a `poll` **náhodně zamíchá** (Gemini rád dává správnou odpověď na stejné místo); `truefalse` zůstává vždy Pravda, Nepravda. V editoru kvízu je navíc tlačítko 🔀 u každé otázky a „Zamíchat odpovědi ve všech otázkách“ (`shuffleOptions` v `admin.js`) pro starší kvízy.
 ### Bodování (`Scoring::evaluate`)
 
 `základ × (1 − R × čas/limit)` + `streak_bonus × min(série_před_otázkou, streak_max)`; více správných: `all_or_nothing` / `proportional`; anketa = 0 bodů a série se nepřeruší.

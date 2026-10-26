@@ -155,6 +155,10 @@ function handleSpeech(st) {
     const lq = lastQuestionState;   // otázka skončila vypršením limitu, ne dřívějším uzavřením
     ctx.timeUp = !!(lq && lq.question && lq.question.index === st.question.index && lq.question.ends_at
       && Clock.now() >= lq.question.ends_at - 1500);
+    if (ctx.timeUp && st.beep && st.beep.enabled && st.beep.final && beepOn() && !beepSeen(lq.question).has('end')) {
+      beepSeen(lq.question).add('end');
+      Beeper.playFinal(st.beep);
+    }
   }
   speakPhase(st, reading, ctx);
 }
@@ -167,6 +171,34 @@ function handlePause(st) {
   prevPaused = st.paused;
 }
 
+/* ---------- pípání (zvukový signál před koncem času) ---------- */
+const beepSaid = new Map();   // číslo otázky → množina už zahraných pípnutí
+function beepOn() {
+  try { return localStorage.getItem('kviz_beep') !== 'off'; } catch (e) { return true; }
+}
+function beepSet(on) {
+  try { localStorage.setItem('kviz_beep', on ? 'on' : 'off'); } catch (e) { /* nic */ }
+}
+function beepSeen(q) {
+  let s = beepSaid.get(q.index);
+  if (!s) { s = new Set(); beepSaid.set(q.index, s); }
+  return s;
+}
+/** Zahraje pípnutí podle zbývajícího času r (ms). Každé jen jednou za otázku; po skoku času (pauza) jen nejnovější. */
+function beepTick(st, r) {
+  const b = st.beep, q = st.question;
+  if (!b || !b.enabled || !beepOn() || r === null) return;
+  const limit = q.time_limit * 1000;
+  if (limit <= 0) return;
+  const said = beepSeen(q);
+  const n = Math.min(b.seconds, Math.floor(limit / 1000));
+  let play = null;
+  for (let k = n; k >= 1; k--) {
+    if (r > 0 && r <= k * 1000 && !said.has('b' + k)) { said.add('b' + k); play = n - k; }
+  }
+  if (play !== null) Beeper.beep(b, play, n);
+  if (b.final && r <= 0 && !said.has('end')) { said.add('end'); Beeper.playFinal(b); }
+}
 function repeatSpeech() {
   if (!last) return;
   Speech.blocked = false;
@@ -178,6 +210,7 @@ function ttsButtons(st) {
   const out = [];
   if (Speech.on || st.mode === 'voice') out.push(btn('🔁 Zopakovat', repeatSpeech, 'sec'));
   out.push(btn(Speech.on ? '🔊 Hlas zapnut' : '🔇 Hlas vypnut', () => { Speech.setOn(!Speech.on); if (last) render(last); }, 'sec'));
+  if (st.beep && st.beep.enabled) out.push(btn(beepOn() ? '🔔 Pípání zapnuto' : '🔕 Pípání vypnuto', () => { beepSet(!beepOn()); Beeper.unlock(); if (last) render(last); }, 'sec'));
   if (st.phase === 'question' && st.question.reading) out.push(btn('Přeskočit čtení ▶', () => control('tts_done'), 'sec'));
   return out;
 }
@@ -194,6 +227,9 @@ function shell(st, content, controls) {
       : null,
     Speech.lastError
       ? h('div', { class: 'banner conn' }, 'Gemini TTS nefunguje: ' + Speech.lastError)
+      : null,
+    st.beep && st.beep.enabled && beepOn() && !(Beeper.ctx && Beeper.ctx.state === 'running')
+      ? h('div', { class: 'banner' }, 'Prohlížeč zatím nepovolil zvuk pípání. ', h('button', { class: 'pill', style: 'border:0;color:#fff;cursor:pointer', onclick: () => { Beeper.unlock(); if (last) render(last); } }, '🔔 Povolit zvuk'))
       : null,
     Speech.on && st.tts && Speech.supported() && !Speech.czechVoice() && !st.tts.gemini
       ? h('div', { class: 'banner' }, 'Toto zařízení nemá český hlas, čtení bude znít špatně. Nainstalujte český hlas v systému, nebo zapněte záložní Gemini TTS v nastavení.')
@@ -360,12 +396,16 @@ function onState(st) {
   if (st.phase === 'question') lastQuestionState = st;
 }
 
-// Časová upozornění (polovina času, před koncem, odpočet 3-2-1) – jen při běžícím odpočtu
+// Časová upozornění: hlasatel (polovina času, před koncem, odpočet 3-2-1) a pípání – jen při běžícím odpočtu
 setInterval(() => {
   const st = last;
-  if (!st || st.phase !== 'question' || st.paused || st.question.reading || !st.tts || !Speech.on) return;
-  const cue = timeCue(st, remainingMs(st.question, false));
-  if (cue) Speech.say(cue);
+  if (!st || st.phase !== 'question' || st.paused || st.question.reading) return;
+  const r = remainingMs(st.question, false);
+  if (st.tts && Speech.on) {
+    const cue = timeCue(st, r);
+    if (cue) Speech.say(cue);
+  }
+  beepTick(st, r);
 }, 250);
 /* ---------- start ---------- */
 (async () => {

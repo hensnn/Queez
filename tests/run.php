@@ -295,6 +295,17 @@ ok('pauza při čtení: čtení skončilo, odpočet čeká', ($hp['paused'] ?? f
 host($gp, 'resume');
 ok('po Pokračovat odpočet běží', ($h = hostState($gp)) && ($h['question']['ends_at'] ?? 0) > ($h['server_time'] ?? PHP_INT_MAX));
 
+/* ---------------------------------------------------------------- 6b) pípání (zvukový signál před koncem času) */
+echo "Pípání: nastavení ve stavu hry\n";
+$gb0 = newGame($qid, ['default_time_limit' => 0]);
+join_($gb0, 'B');
+$b0 = v(hostState($gb0), 'beep');
+ok('výchozí: pípání vypnuto, 10 s, prodlužující se tóny, závěrečný tón', is_array($b0) && $b0['enabled'] === false && $b0['seconds'] === 10 && $b0['style'] === 'lengthening' && $b0['final'] === true);
+$gb1 = newGame($qid, ['default_time_limit' => 0, 'beep_enabled' => true, 'beep_seconds' => 5, 'beep_style' => 'rising', 'beep_final' => false]);
+join_($gb1, 'B');
+$b1 = v(hostState($gb1), 'beep');
+ok('přepsání při spuštění hry: zapnuto, 5 s, stoupající, bez závěrečného tónu', is_array($b1) && $b1['enabled'] === true && $b1['seconds'] === 5 && $b1['style'] === 'rising' && $b1['final'] === false);
+ok('hráč nastavení pípání nedostává', v(stateOf($gb1, 'player', join_($gb1, 'C')['token']), 'beep') === MISSING);
 /* ---------------------------------------------------------------- 7) časovač a pauza */
 echo "Časovač: vypršení limitu a pauza\n";
 $gt = newGame($qid, ['default_time_limit' => 5, 'allow_change_answer' => true, 'secret_voting' => false]);
