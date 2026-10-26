@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/img/banner.svg" alt="Queez – kvízová hra" width="720"></p>
+
 # Kvíz – kvízová aplikace pro hraní s přáteli (PHP + SQLite)
 
 Webová kvízová hra ve stylu Kahoot. Na velké obrazovce (nebo jen z mobilu v hlasovém režimu) běží hra,

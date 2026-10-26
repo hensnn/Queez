@@ -44,12 +44,12 @@ public/              ← webroot (jediná složka dostupná z webu)
   index.php          → přesměruje na /play/
   play/ host/ admin/ ← HTML stránky (načítají skripty z assets/)
   api/*.php          ← JSON API (viz níže); každý soubor je tenký, logika je v src/
-  assets/            ← common.js play.js host.js admin.js tts.js, game.css admin.css, vendor/qrcode.js, fonts/ (Nunito)
+  assets/            ← common.js play.js host.js admin.js tts.js, game.css admin.css, vendor/qrcode.js, fonts/ (Nunito), icon.svg (favicon/logo)
 src/                 ← třídy (autoload podle názvu souboru, bez namespace)
 data/                ← SQLite, uploady, TTS cache, secrets/ (šifrovaný klíč) – zapisovatelné, MIMO web, není v Gitu
 logs/                ← error.log, není v Gitu
 config.php           ← tajné/startovací věci, není v Gitu (vzor config.example.php)
-deploy/ tools/ tests/ docs/
+deploy/ tools/ tests/ docs/ (docs/img/ = snímky obrazovek a banner.svg do README)
 ```
 
 ### Třídy v `src/`
