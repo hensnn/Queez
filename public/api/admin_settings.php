@@ -11,5 +11,8 @@ Http::run(function () {
             Settings::saveMany(is_array($in['values'] ?? null) ? $in['values'] : []);
         }
     }
-    return Settings::forAdmin() + ['categories' => Db::all('SELECT id,name FROM categories ORDER BY sort,name')];
+    return Settings::forAdmin() + [
+        'categories' => Db::all('SELECT id,name FROM categories ORDER BY sort,name'),
+        'subs'       => Defaults::SUBCATEGORIES,   // nabídka podkategorií pro formulář generování
+    ];
 });

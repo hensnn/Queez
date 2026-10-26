@@ -164,7 +164,7 @@ function route() {
 
 async function loadSettings() {
   const r = await api('admin_settings.php');
-  S.tabs = r.tabs; S.values = r.values; S.categories = r.categories;
+  S.tabs = r.tabs; S.values = r.values; S.categories = r.categories; S.subs = r.subs || {};
   S.defs = Object.fromEntries(r.defs.map(d => [d.key, d]));
 }
 
@@ -371,9 +371,34 @@ async function viewGenerate() {
   const sl = (key, label, min, max, step, unit) => h('div', { class: 'setting' }, h('strong', {}, label),
     control({ type: 'int', min, max, step, unit }, f[key], x => { f[key] = x; }));
 
-  const cat = h('select', { onchange: e => { f.category_id = e.target.value ? parseInt(e.target.value, 10) : ''; } },
+  // Podkategorie: nabídka podle vybrané kategorie + možnost „Vlastní…“ (volný text)
+  const CUSTOM = '__custom__';
+  const subWrap = h('div');
+  const subInput = h('input', { type: 'text', maxlength: 200, placeholder: 'Vlastní upřesnění, např. české filmy 90. let, fotbal – MS',
+    oninput: e => { f.subcategory = e.target.value; } });
+  const drawSub = () => {
+    const c = S.categories.find(x => x.id === f.category_id);
+    const list = (c && S.subs && S.subs[c.name]) || [];
+    f.subcategory = '';
+    subInput.value = '';
+    if (!list.length) {   // obecné téma nebo vlastní kategorie: jen volný text
+      subInput.style.display = '';
+      put(subWrap, subInput);
+      return;
+    }
+    const sel = h('select', { onchange: () => {
+      if (sel.value === CUSTOM) { subInput.style.display = ''; f.subcategory = subInput.value; subInput.focus(); }
+      else { subInput.style.display = 'none'; f.subcategory = sel.value; }
+    } },
+      h('option', { value: '' }, '— bez upřesnění —'),
+      list.map(x => h('option', { value: x }, x)),
+      h('option', { value: CUSTOM }, '✏️ Vlastní…'));
+    subInput.style.display = 'none';
+    put(subWrap, sel, subInput);
+  };
+  const cat = h('select', { onchange: e => { f.category_id = e.target.value ? parseInt(e.target.value, 10) : ''; drawSub(); } },
     h('option', { value: '' }, '— obecné / různé —'), S.categories.map(c => h('option', { value: c.id }, c.name)));
-  const sub = h('input', { type: 'text', maxlength: 200, placeholder: 'např. české filmy 90. let, fotbal – MS', oninput: e => { f.subcategory = e.target.value; } });
+  drawSub();
   const aud = h('select', { onchange: e => { f.audience = e.target.value; } },
     [['dospeli', 'Dospělí'], ['deti', 'Děti'], ['odbornici', 'Odborníci']].map(([k, l]) => h('option', { value: k }, l)));
   const lang = h('input', { type: 'text', maxlength: 30, value: f.language, oninput: e => { f.language = e.target.value; } });
@@ -409,7 +434,7 @@ async function viewGenerate() {
     !keySt.gemini_api_key.set ? h('div', { class: 'note' }, 'Není nastaven API klíč. Zadejte ho v ', h('a', { href: '#/settings' }, 'Nastavení → Gemini'), '.') : null,
     h('div', { class: 'card' },
       h('label', { class: 'f' }, 'Kategorie / oblast'), cat,
-      h('label', { class: 'f' }, 'Podkategorie / upřesnění'), sub,
+      h('label', { class: 'f' }, 'Podkategorie / upřesnění'), subWrap,
       h('label', { class: 'f' }, 'Cílová skupina'), aud,
       h('label', { class: 'f' }, 'Jazyk'), lang,
       h('label', { class: 'f' }, 'Typy otázek'), typeBox, avoid,
