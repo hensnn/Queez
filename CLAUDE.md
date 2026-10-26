@@ -31,8 +31,9 @@ php tools/loadtest.php --url=http://127.0.0.1:8000 --password=... --players=24  
 ```
 
 - `tests/run.php` si vytvoří dočasný kvíz a hry a na konci je smaže. Spouštějte jen proti vývojové instalaci.
-- Gemini jde testovat bez klíče: do `config.php` přidejte `'gemini_base_url' => 'http://127.0.0.1:8001'` a pusťte vlastní falešný server,
-  který vrací JSON ve formátu Gemini `generateContent` (u TTS s `inlineData` PCM). Skutečné API zatím vyzkoušeno nebylo (viz „Neověřené“).
+- Gemini jde testovat bez klíče: `php -S 127.0.0.1:8001 tests/fake_gemini.php` a do `config.php` přidejte `'gemini_base_url' => 'http://127.0.0.1:8001'`
+  (v adminu uložte libovolný klíč; chování podle začátku klíče je popsané v záhlaví `tests/fake_gemini.php`, vrací i záměrně vadné otázky a audio pro TTS).
+  Skutečné API zatím vyzkoušeno nebylo (viz „Neověřené“).
 - Po změně JS/CSS ověřte v prohlížeči na mobilní šířce (360 px) i desktopu; měřit lze `document.documentElement.scrollWidth > innerWidth`.
 
 ## Architektura
