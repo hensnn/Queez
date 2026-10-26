@@ -377,16 +377,49 @@ final class Game
                 self::closeQuestion($g);
                 break;
             case 'reveal':
-                Db::exec("UPDATE games SET phase='leaderboard', phase_changed_at=?, version=version+1 WHERE id=?", [now_ms(), $g['id']]);
-                break;
-            case 'leaderboard':
-                $next = (int)$g['current_index'] + 1;
-                if ($next < (int)$g['s']['_total']) {
-                    self::openQuestion($g, $next);
+                if (self::showLeaderboardAfter($g)) {
+                    Db::exec("UPDATE games SET phase='leaderboard', phase_changed_at=?, version=version+1 WHERE id=?", [now_ms(), $g['id']]);
                 } else {
-                    self::finish($g);
+                    self::goNext($g);   // průběžné pořadí se přeskakuje podle nastavení
                 }
                 break;
+            case 'leaderboard':
+                self::goNext($g);
+                break;
+        }
+    }
+
+    /** Další otázka, nebo konec hry po poslední. */
+    private static function goNext(array $g): void
+    {
+        $next = (int)$g['current_index'] + 1;
+        if ($next < (int)$g['s']['_total']) {
+            self::openQuestion($g, $next);
+        } else {
+            self::finish($g);
+        }
+    }
+
+    /**
+     * Má se po odhalení právě skončené otázky ukázat průběžné pořadí?
+     * Nastavení „leaderboard_mode“: every = po každé otázce, interval = po každých N otázkách,
+     * end = jen po poslední otázce, never = nikdy (rovnou konečné výsledky).
+     */
+    public static function showLeaderboardAfter(array $g): bool
+    {
+        $s = $g['s'];
+        $idx = (int)$g['current_index'];
+        $total = (int)($s['_total'] ?? 0);
+        switch ($s['leaderboard_mode'] ?? 'every') {
+            case 'never':
+                return false;
+            case 'end':
+                return $idx + 1 >= $total;
+            case 'interval':
+                $n = max(1, (int)($s['leaderboard_every'] ?? 3));
+                return ($idx + 1) % $n === 0;
+            default:
+                return true;
         }
     }
 
@@ -549,6 +582,7 @@ final class Game
                 'total'               => (int)($s['_total'] ?? 0),
                 'is_last'             => $idx + 1 >= (int)($s['_total'] ?? 0),
                 'warn_seconds'        => (int)($s['warn_seconds'] ?? 5),
+                'lb_next'             => $phase === 'reveal' ? self::showLeaderboardAfter($g) : true,
                 'allow_change_answer' => !empty($s['allow_change_answer']),
                 'auto_advance'        => !empty($s['auto_advance']),
             ],

@@ -122,7 +122,8 @@ function viewQuestion(st) {
   const closed = () => { const r = remainingMs(q, st.paused); return reading || st.paused || (r !== null && r <= 0); };
   const locked = reading || (me.answered && !st.game.allow_change_answer);
 
-  const tiles = h('div', { class: 'tiles n' + q.options.length },
+  const hasText = q.options.some(o => o.text !== null);
+  const tiles = h('div', { class: 'tiles n' + q.options.length + (hasText ? ' txt' : '') },
     q.options.map(o => {
       const isSel = selected.includes(o.pos);
       const cnt = q.counts ? q.counts[o.pos] : null;
@@ -189,7 +190,7 @@ function viewReveal(st) {
   else box = h('div', { class: 'result neutral' }, me.answered ? '🗳️ Díky za hlas!' : '😴 Bez odpovědi');
   const mine = me.choice || myLastChoice[q.index] || [];
   const isPoll = q.type === 'poll';
-  const tiles = h('div', { class: 'tiles n' + q.options.length, style: 'flex:0' },
+  const tiles = h('div', { class: 'tiles n' + q.options.length + (q.options.some(o => o.text !== null) ? ' txt' : ''), style: 'flex:0' },
     q.options.map(o => h('div', {
       class: 'tile c' + o.pos + (!isPoll && r.correct.includes(o.pos) ? ' ok' : (!isPoll ? ' dim' : '')) + (mine.includes(o.pos) ? ' sel' : ''),
       style: 'min-height:4rem',

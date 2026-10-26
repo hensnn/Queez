@@ -18,7 +18,10 @@ body{margin:0;font:700 18px/1.35 "Nunito","Arial Rounded MT Bold","Trebuchet MS"
   -webkit-tap-highlight-color:transparent;text-shadow:0 2px 0 rgba(45,27,61,.28)}
 button{font:inherit;cursor:pointer}
 input{font:inherit}
-#app{min-height:100vh;display:flex;flex-direction:column}
+#app{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,.tile{touch-action:manipulation}
+img{max-width:100%}
 
 /* ---------- barvy odpovědí ---------- */
 .c0{--tc:#ff4d6d;--tl:#ff8fa3;--td:#b5223f}
@@ -64,11 +67,13 @@ input{font:inherit}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 
 /* ---------- odpovědi ---------- */
-.tiles{display:grid;gap:1rem;flex:0 1 auto;align-content:start;grid-auto-rows:minmax(6rem,13rem)}
+/* Dlaždice zaplní zbývající výšku displeje (max. 13 rem), na malém displeji se zmenší (min. 3,6 rem);
+   když se ani tak nevejdou, stránka se dá posouvat. */
+.tiles{display:grid;gap:1rem;flex:1 1 auto;align-content:start;grid-auto-rows:minmax(3.6rem,13rem)}
 .tiles.n2,.tiles.n1{grid-template-columns:1fr}
 .tiles.n3,.tiles.n4,.tiles.n5,.tiles.n6{grid-template-columns:1fr 1fr}
-.tile{position:relative;border:4px solid var(--ink);border-radius:28px;color:var(--tx,#fff);min-height:6rem;padding:.7rem .9rem;
-  display:flex;align-items:center;justify-content:center;gap:.7rem;font-weight:1000;font-size:1.3rem;text-align:left;
+.tile{position:relative;border:4px solid var(--ink);border-radius:28px;color:var(--tx,#fff);min-height:3.6rem;padding:.7rem .9rem;
+  display:flex;align-items:center;justify-content:center;gap:.7rem;font-weight:1000;font-size:clamp(1rem,4.6vw,1.3rem);text-align:left;overflow-wrap:anywhere;
   background:radial-gradient(120% 90% at 30% 0%,var(--tl),transparent 60%),var(--tc);box-shadow:0 9px 0 var(--ink);
   transition:transform .08s,box-shadow .08s,opacity .2s;animation:pop .35s both;text-shadow:0 2px 0 rgba(0,0,0,.28)}
 .c2.tile{text-shadow:none}
@@ -92,7 +97,7 @@ button.tile:active:not(:disabled){transform:translateY(7px);box-shadow:0 2px 0 v
 .p-top{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.9rem}
 .p-center{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.9rem}
 .qbox{background:var(--cream);color:var(--ink);border:3px solid var(--ink);border-radius:26px;padding:1rem 1.1rem;box-shadow:var(--shadow);text-shadow:none;margin:.2rem 0 1rem;text-align:center}
-.qtext{font-size:1.5rem;font-weight:1000;line-height:1.25}
+.qtext{font-size:clamp(1.1rem,5vw,1.5rem);font-weight:1000;line-height:1.25;overflow-wrap:anywhere}
 .qimg{max-width:100%;max-height:30vh;border-radius:18px;border:3px solid var(--ink);display:block;margin:.7rem auto 0}
 .result{border:4px solid var(--ink);border-radius:28px;padding:1.1rem;text-align:center;font-weight:1000;font-size:2.1rem;box-shadow:var(--shadow);animation:pop .4s both}
 .result.good{background:linear-gradient(180deg,#5be39a,var(--ok))}
@@ -165,6 +170,67 @@ body.host.voice{font-size:17px}
 .voice .podium{min-height:12rem}
 .voice .h-ctl{position:sticky;bottom:0;gap:.5rem;padding:.6rem}
 .voice .h-ctl button{flex:1 1 42%;padding:.9rem .5rem;font-size:1.05rem}
+
+/* ---------- malé displeje a mobily ---------- */
+@media (max-width:700px){
+  .h-wrap{padding:.7rem .8rem}
+  .h-top{flex-wrap:wrap}
+  .h-top .title{font-size:1.1rem}
+  .h-q{font-size:clamp(1.2rem,5.4vw,2rem);padding:.6rem .9rem;border-radius:22px;margin-bottom:.8rem}
+  .h-tiles{grid-template-columns:1fr;gap:.7rem}
+  .h-tiles .tile{min-height:3.6rem;font-size:clamp(1rem,4.6vw,1.4rem);padding:.4rem .7rem;border-radius:20px;box-shadow:0 6px 0 var(--ink)}
+  .h-tiles .tile .shape{width:2.4rem;height:2.4rem;font-size:1.3rem}
+  .bigtimer{width:4.2rem;height:4.2rem;font-size:1.9rem}
+  .pin{font-size:clamp(2.2rem,12vw,3.2rem)}
+  .podium{min-height:14rem;gap:.5rem}
+  .podium .p1 .blk{height:7rem}.podium .p2 .blk{height:5rem}.podium .p3 .blk{height:3.4rem}
+  .podium .nm{font-size:1.05rem}.podium .blk{font-size:2rem}
+  .podium .av.lg{width:3rem;height:3rem;font-size:1.1rem}
+  .h-rest{columns:1}
+  .h-ctl{gap:.5rem;padding:.6rem}
+  .h-ctl button{flex:1 1 40%;padding:.7rem .6rem;font-size:1rem}
+  .chips{gap:.4rem}
+  .h-lobby{gap:1rem}
+  .qrbox{padding:.8rem;border-radius:24px}
+}
+/* odpovědi s textem se na úzkém displeji řadí pod sebe (dlouhý text se ve dvou sloupcích láme na mnoho řádků) */
+@media (max-width:480px) and (orientation:portrait){
+  .tiles.txt{grid-template-columns:1fr;grid-auto-rows:minmax(3.4rem,auto)}
+  .tiles.txt .tile{min-height:3.4rem}
+  /* pět a šest odpovědí s textem: kompaktnější, ať se vejdou na displej */
+  .tiles.txt.n5,.tiles.txt.n6{gap:.55rem}
+  .tiles.txt.n5 .tile,.tiles.txt.n6 .tile{min-height:3rem;padding:.25rem .6rem;gap:.5rem;font-size:clamp(.9rem,4vw,1.1rem);box-shadow:0 5px 0 var(--ink);border-width:3px;border-radius:20px}
+  .tiles.txt.n5 .tile .shape,.tiles.txt.n6 .tile .shape{width:2.1rem;height:2.1rem;font-size:1.1rem}
+}
+@media (max-width:380px){
+  body{font-size:16px}
+  .p-wrap{padding:.7rem}
+  .tile{padding:.45rem .55rem;gap:.4rem;border-radius:22px}
+  .tile .shape{width:2.5rem;height:2.5rem;font-size:1.35rem}
+  .tile .letter{display:none}
+  .btn{font-size:1.05rem}
+  .big{font-size:1.6rem}.huge{font-size:2.6rem}
+  .result{font-size:1.6rem;padding:.8rem}
+}
+@media (max-height:640px){
+  .p-wrap{padding:.6rem}
+  .p-top{margin-bottom:.5rem}
+  .qbox{padding:.6rem .8rem;margin:0 0 .6rem;border-radius:20px;max-height:34vh;overflow:auto}
+  .qimg{max-height:16vh}
+  .tiles{gap:.6rem;grid-auto-rows:minmax(3.2rem,9rem)}
+  .tile{box-shadow:0 5px 0 var(--ink);border-width:3px}
+  .big{font-size:1.5rem}.huge{font-size:2.3rem}
+  .result{font-size:1.5rem;padding:.7rem}
+  .timer{width:3.2rem;height:3.2rem;font-size:1.3rem}
+  .lb li{padding:.3rem .6rem;margin:.35rem 0}
+  .p-center{gap:.5rem}
+}
+/* telefon na šířku: odpovědi vedle sebe */
+@media (max-height:480px) and (orientation:landscape){
+  .p-wrap,.p-wrap .tiles{max-width:none}
+  .tiles.n3,.tiles.n4,.tiles.n5,.tiles.n6{grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))}
+  .h-tiles{grid-template-columns:1fr 1fr}
+}
 
 /* Animace „vyskočení“ jen při změně obrazovky, ne při každé průběžné aktualizaci */
 .still .tile,.still .chip,.still .lb li,.still .result,.still .podium .col{animation:none}

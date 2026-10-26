@@ -243,7 +243,7 @@ function viewReveal(st) {
       tilesFor(q, r, r.counts),
       r.explanation ? h('div', { class: 'expl', style: 'margin:1rem auto;max-width:50rem' }, r.explanation) : null,
       st.game.auto_advance ? h('p', { style: 'text-align:center;opacity:.8' }, 'Automatický postup je zapnutý.') : null),
-    [pauseButton(st), btn('Žebříček ▶', () => control('next')), endButton()]);
+    [pauseButton(st), btn(st.game.lb_next ? 'Žebříček ▶' : (st.game.is_last ? 'Konec hry ▶' : 'Další otázka ▶'), () => control('next')), endButton()]);
 }
 
 function podium(lb) {

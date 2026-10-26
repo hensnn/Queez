@@ -60,3 +60,28 @@ tr:last-child td{border-bottom:0}
 .savebar{position:sticky;bottom:0;background:rgba(255,243,224,.96);padding:.7rem 0;border-top:3px solid var(--ink);display:flex;gap:.6rem;align-items:center}
 details>summary{cursor:pointer;font-weight:900}
 a{color:var(--primary)}
+img{max-width:100%}
+@media(max-width:700px){
+  main{margin:.7rem auto;padding:0 .6rem 4rem}
+  .card{padding:.8rem;border-radius:18px}
+  header.top{gap:.2rem;padding:.5rem .6rem}
+  header.top a{padding:.3rem .6rem;font-size:.95rem}
+  header.top .brand{font-size:1.05rem;margin-right:.3rem;flex-basis:100%}
+  header.top .spacer{display:none}
+  h1{font-size:1.5rem}
+  /* tabulky se na úzkém displeji skládají pod sebe */
+  table,tbody,tr,td{display:block;width:100%}
+  tr{padding:.5rem 0;border-bottom:2px dashed var(--line)}
+  tr:last-child{border-bottom:0}
+  td{border:0;padding:.15rem 0}
+  .actions{justify-content:flex-start}
+  .opt{flex-wrap:wrap}
+  .opt input[type=text]{min-width:9rem}
+  .qcard .qhead{flex-wrap:wrap}
+  .savebar{flex-wrap:wrap}
+  .tabs{gap:.3rem}
+  .tabs button{padding:.35rem .7rem}
+  .slider{gap:.5rem}
+  .slider output{min-width:4rem}
+  .row.between{gap:.4rem}
+}
