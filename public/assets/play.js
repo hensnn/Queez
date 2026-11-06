@@ -97,7 +97,8 @@ function render(st) {
   lastScreen = screen;
   stopTick();
   const body = ({ lobby: viewLobby, question: viewQuestion, reveal: viewReveal, leaderboard: viewBoard, finished: viewFinished }[st.phase] || viewLobby)(st);
-  shell(st.paused ? h('div', { class: 'banner' }, 'Hra je pozastavená') : null, body);
+  shell(st.paused ? h('div', { class: 'banner' }, 'Hra je pozastavená') : null, body,
+    h('div', { class: 'rules-link' }, h('button', { onclick: openRules }, '📋 Pravidla hry')));
 }
 
 function viewLobby(st) {
@@ -131,8 +132,15 @@ function viewQuestion(st) {
 
   const reading = !!q.reading;   // hlasový režim: otázka se ještě předčítá, odpočet nezačal
   const waiting0 = !st.paused && waitMs(q) > 0;   // odpočet před hlasováním: otázka je vidět, ale hlasovat ještě nejde
-  const closed = () => { const r = remainingMs(q, st.paused); return reading || st.paused || waitMs(q) > 0 || (r !== null && r <= 0); };
-  const locked = reading || waiting0 || (me.answered && !st.game.allow_change_answer);
+  const early = !!st.game.early_vote;              // nastavení: vybrat odpověď lze už při čtení / odpočtu, odešle se až po jejich konci
+  const preOpen = reading || waiting0;             // hlasování ještě není otevřené
+  const closed = () => {
+    if (st.paused) return true;
+    if (reading || waitMs(q) > 0) return !early;
+    const r = remainingMs(q, st.paused);
+    return r !== null && r <= 0;
+  };
+  const locked = (preOpen && !early) || (me.answered && !st.game.allow_change_answer);
 
   const hasText = q.options.some(o => o.text !== null);
   const tiles = h('div', { class: 'tiles n' + q.options.length + (hasText ? ' txt' : '') + layoutClass(st) },
@@ -152,7 +160,7 @@ function viewQuestion(st) {
             render(st);
           } else {
             local.sel = [o.pos];
-            sendChoice([o.pos]);
+            if (!(reading || waitMs(q) > 0)) sendChoice([o.pos]);   // před otevřením hlasování se jen vybere
             render(st);
           }
         },
@@ -162,7 +170,7 @@ function viewQuestion(st) {
       cnt !== null ? h('span', { class: 'cnt' }, cnt) : null);
     }));
 
-  const submit = q.multi && !locked
+  const submit = q.multi && !locked && !preOpen
     ? h('button', { class: 'btn', disabled: !selected.length, onclick: () => sendChoice(selected.slice().sort()) },
         me.answered ? 'Změnit odpověď' : 'Odeslat odpověď')
     : null;
@@ -173,9 +181,16 @@ function viewQuestion(st) {
       st.game.allow_change_answer ? h('div', { class: 'pill' }, 'Do konce limitu ji můžete změnit') : null);
   }
 
-  if (reading) put(status, h('div', { class: 'pill' }, '🔊 Čte se otázka, odpověď půjde za chvilku'));
-
-  if (waiting0) put(status, h('div', { class: 'pill' }, '⏳ Hlasování se otevře za chvilku'));
+  if (preOpen) {
+    const what = reading ? '🔊 Čte se otázka' : '⏳ Hlasování se otevře za chvilku';
+    const hint = !early ? (reading ? ', odpověď půjde za chvilku' : '')
+      : (local.sel.length ? ' – odpověď je vybraná, odešle se po začátku hlasování' : ' – odpověď můžete vybrat už teď, odešle se po začátku hlasování');
+    put(status, h('div', { class: 'pill' }, what + hint));
+  } else if (early && !st.paused && !me.answered && local.sel.length && !local.autoSent) {
+    // hlasování se právě otevřelo → odeslat odpověď vybranou předem (čas se počítá od tohoto okamžiku)
+    local.autoSent = true;
+    sendChoice(local.sel.slice().sort());
+  }
 
   stopTimer = every(200, () => {
     if (reading) { timeEl.textContent = '🔊'; return; }
@@ -250,6 +265,27 @@ function viewFinished(st) {
     h('div', { class: 'big' }, st.me.rank + '. místo'), h('div', {}, st.me.score + ' bodů')),
     lbList(st),
     h('button', { class: 'btn sec', onclick: () => { store.clear(); sess = null; if (transport) transport.stop(); showJoin(''); } }, 'Připojit se k nové hře'));
+}
+
+/* ---------- pravidla hry (jen ke čtení) ---------- */
+let rulesBg = null;
+function closeRules() { if (rulesBg) { rulesBg.remove(); rulesBg = null; } }
+async function openRules() {
+  closeRules();
+  const bg = h('div', { class: 'modal-bg', onclick: e => { if (e.target === bg) closeRules(); } });
+  rulesBg = bg;
+  document.body.append(bg);
+  const close = h('div', { class: 'foot' }, h('button', { class: 'sec', onclick: closeRules }, 'Zavřít'));
+  put(bg, h('div', { class: 'modal' }, h('div', { class: 'body' }, 'Načítám pravidla…'), close));
+  try {
+    const r = await fetch('../api/rules.php?game=' + encodeURIComponent(sess.pin), { cache: 'no-store' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.message || 'Chyba ' + r.status);
+    put(bg, h('div', { class: 'modal' }, h('div', { class: 'body' }, h('h2', {}, '📋 Pravidla hry'),
+      ruleGroups(d.defs, d.values, (def, val) => h('span', { class: 'rv' }, ruleText(def, val)))), close));
+  } catch (e) {
+    put(bg, h('div', { class: 'modal' }, h('div', { class: 'body' }, 'Pravidla se nepodařilo načíst: ' + e.message), close));
+  }
 }
 
 /* ---------- start ---------- */

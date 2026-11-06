@@ -134,7 +134,6 @@ async function speakPhase(st, startCountdown, ctx) {
     const est = Math.max(2500, phrases.join(' ').length * 65);
     if (Date.now() - t0 < est) await sleep(est - (Date.now() - t0));
   }
-  await sleep(((st.tts && st.tts.read_delay) || 0) * 1000);
   const cur = last;
   if (key === spokenKey && cur && cur.phase === 'question' && cur.question.reading && cur.question.index === st.question.index) {
     control('tts_done');
@@ -244,7 +243,7 @@ function shell(st, content, controls) {
             if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(() => {});
           } }, '⛶'))),
       h('div', { class: 'h-main' }, content)),
-    h('div', { class: 'h-ctl' }, controls || [], ttsButtons(st)));
+    h('div', { class: 'h-ctl' }, controls || [], st.phase !== 'finished' ? btn('📋 Pravidla', openRules, 'sec') : null, ttsButtons(st)));
 }
 
 const btn = (label, fn, cls, disabled) => h('button', { class: cls || '', disabled: !!disabled, onclick: fn }, label);
@@ -414,6 +413,72 @@ setInterval(() => {
   }
   beepTick(st, r);
 }, 250);
+/* ---------- pravidla hry: prohlížení a úprava (v čekárně nebo po pozastavení) ---------- */
+let rulesOpen = null;   // překryvné okno s pravidly (mimo #app, aby ho nesmazalo překreslení)
+
+function closeRules() {
+  if (rulesOpen) { rulesOpen.remove(); rulesOpen = null; }
+}
+
+function ruleControl(d, value, onchange) {
+  if (d.type === 'bool') return h('input', { type: 'checkbox', checked: !!value, onchange: e => onchange(e.target.checked) });
+  if (d.type === 'select') {
+    return h('select', { onchange: e => onchange(e.target.value) },
+      Object.entries(d.options).map(([k, label]) => h('option', { value: k, selected: k === value }, label)));
+  }
+  if (d.type === 'int' || d.type === 'float') {
+    const out = h('output', {}, ruleText(d, value));
+    const inp = h('input', { type: 'range', min: d.min, max: d.max, step: d.step || 1, value: value, oninput: () => {
+      const v = d.type === 'int' ? parseInt(inp.value, 10) : parseFloat(inp.value);
+      out.textContent = ruleText(d, v);
+      onchange(v);
+    } });
+    return h('span', { class: 'rng' }, inp, out);
+  }
+  return h('span', {}, ruleText(d, value));
+}
+
+async function openRules() {
+  closeRules();
+  const bg = h('div', { class: 'modal-bg', onclick: e => { if (e.target === bg) closeRules(); } });
+  rulesOpen = bg;
+  document.body.append(bg);
+  await drawRules(bg);
+}
+
+async function drawRules(bg) {
+  put(bg, h('div', { class: 'modal' }, h('div', { class: 'body' }, 'Načítám pravidla…')));
+  let data;
+  try {
+    const r = await fetch('../api/host_rules.php?pin=' + encodeURIComponent(PIN) + '&key=' + encodeURIComponent(KEY), { cache: 'no-store' });
+    data = await r.json();
+    if (!r.ok) throw new Error(data.message || 'Chyba ' + r.status);
+  } catch (e) {
+    put(bg, h('div', { class: 'modal' }, h('div', { class: 'body' }, 'Pravidla se nepodařilo načíst: ' + e.message),
+      h('div', { class: 'foot' }, btn('Zavřít', closeRules, 'sec'))));
+    return;
+  }
+  const edits = {};
+  const rows = ruleGroups(data.defs, data.values, (d, val) => data.editable && !d.locked
+    ? ruleControl(d, val, v => { edits[d.key] = v; })
+    : h('span', { class: 'rv' }, ruleText(d, val) + (d.locked && data.editable ? ' (za hry nejde změnit)' : '')));
+  put(bg, h('div', { class: 'modal' },
+    h('div', { class: 'body' },
+      h('h2', {}, '📋 Pravidla hry'),
+      data.editable
+        ? h('p', { class: 'note' }, data.phase === 'lobby' ? 'Hra ještě nezačala – pravidla můžete upravit. Platí jen pro tuto hru.' : 'Hra je pozastavená – pravidla můžete upravit, změny platí od teď. Časový limit a body se změní od další otázky (jen u otázek bez vlastní hodnoty). Platí jen pro tuto hru.')
+        : h('p', { class: 'note' }, 'Pravidla jde měnit v čekárně před startem, nebo po stisknutí Pauza.'),
+      rows),
+    h('div', { class: 'foot' },
+      data.editable ? btn('Uložit pravidla', async () => {
+        if (!Object.keys(edits).length) { closeRules(); return; }
+        const r = await postJson('../api/host_rules.php', { pin: PIN, key: KEY, values: edits });
+        if (!r.ok) { alert(r.message); return; }
+        closeRules();
+        if (transport) transport.poke();
+      }) : (data.phase !== 'finished' ? btn('⏸ Pozastavit a upravit', async () => { await control('pause'); await drawRules(bg); }) : null),
+      btn('Zavřít', closeRules, 'sec'))));
+}
 /* ---------- start ---------- */
 (async () => {
   if (!/^\d{4,8}$/.test(PIN) || !KEY) {
@@ -439,7 +504,7 @@ setInterval(() => {
   });
   transport.start();
   document.addEventListener('keydown', e => {
-    if (!last || e.target.tagName === 'INPUT') return;
+    if (!last || rulesOpen || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       const p = last.phase;

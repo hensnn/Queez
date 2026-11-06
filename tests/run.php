@@ -308,7 +308,7 @@ ok('přepsání při spuštění hry: zapnuto, 5 s, stoupající, bez závěreč
 ok('hráč nastavení pípání nedostává', v(stateOf($gb1, 'player', join_($gb1, 'C')['token']), 'beep') === MISSING);
 /* ---------------------------------------------------------------- 7) časovač a pauza */
 echo "Časovač: vypršení limitu a pauza\n";
-$gt = newGame($qid, ['default_time_limit' => 5, 'allow_change_answer' => true, 'secret_voting' => false]);
+$gt = newGame($qid, ['default_time_limit' => 5, 'allow_change_answer' => true, 'end_mode' => 'limit', 'secret_voting' => false]);
 $t = join_($gt, 'Cyril');
 host($gt, 'start');
 answer($gt, $t, [1]);
@@ -327,19 +327,19 @@ ok('odpověď po limitu je odmítnuta', answer($gt, $t, [1])['_code'] === 422);
 
 /* ---------------------------------------------------------------- 7b) ukončení po poslední odpovědi, odpočet před hlasováním, čas vyhodnocení */
 echo "Ukončení po poslední odpovědi, odpočet před hlasováním, čas vyhodnocení\n";
-$ge = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_on_all_answered' => true]);
+$ge = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_mode' => 'all']);
 $e1 = join_($ge, 'Eva');
 $e2 = join_($ge, 'Emil');
 host($ge, 'start');
 answer($ge, $e1, [0]);
 ok('změna odpovědi povolena, jeden hráč ještě neodpověděl → otázka běží', (hostState($ge)['phase'] ?? '') === 'question');
 answer($ge, $e2, [1]);
-ok('end_on_all_answered: odpověděl poslední hráč → rovnou odhalení', (hostState($ge)['phase'] ?? '') === 'reveal');
-$gf = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_on_all_answered' => false]);
+ok('end_mode=all: odpověděl poslední hráč → rovnou odhalení (i se změnou odpovědi)', (hostState($ge)['phase'] ?? '') === 'reveal');
+$gf = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_mode' => 'limit']);
 $f1 = join_($gf, 'Fanda');
 host($gf, 'start');
 answer($gf, $f1, [0]);
-ok('bez end_on_all_answered a se změnou odpovědi otázka čeká na limit', (hostState($gf)['phase'] ?? '') === 'question');
+ok('end_mode=limit: otázka čeká na limit, i když odpověděl každý', (hostState($gf)['phase'] ?? '') === 'question');
 
 $gp = newGame($qid, ['default_time_limit' => 20, 'allow_change_answer' => false, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2]);
 $p1 = join_($gp, 'Petr');
@@ -363,8 +363,116 @@ host($gq, 'resume');
 $rq = hostState($gq);
 ok('pauza v odpočtu: po pokračování začne odpočet znovu a limit zůstane celý',
     $num($rq, 'question.opens_at') > $num($rq, 'server_time') && $num($rq, 'question.ends_at') - $num($rq, 'question.opens_at') === 20000);
-$gvv = newGame($qid, ['default_time_limit' => 20, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2], 'voice');
-ok('hlasový režim odpočet před hlasováním nepoužije', v(hostState($gvv), 'game.pre_countdown') === 0);
+$gvv = newGame($qid, ['default_time_limit' => 20, 'allow_change_answer' => false, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2], 'voice');
+$vv = join_($gvv, 'Vlasta');
+host($gvv, 'start');
+ok('hlasový režim: během čtení odpočet ještě neběží (reading)', v(hostState($gvv), 'question.reading') === true && v(hostState($gvv), 'game.pre_countdown') === 2);
+host($gvv, 'tts_done');
+$vq = hostState($gvv);
+ok('hlasový režim: po dočtení následuje odpočet před hlasováním (opens_at v budoucnosti)', v($vq, 'question.reading') === false && $num($vq, 'question.opens_at') > $num($vq, 'server_time'));
+ok('hlasový režim: limit se počítá až od konce odpočtu', $num($vq, 'question.ends_at') - $num($vq, 'question.opens_at') === 20000);
+ok('hlasový režim: během odpočtu nelze hlasovat', answer($gvv, $vv, [0])['_code'] === 422);
+sleep(3);
+ok('hlasový režim: po odpočtu se hlasovat dá', answer($gvv, $vv, [0])['_code'] === 200);
+
+/* ---------------------------------------------------------------- 7c) hlasování předem, pravidla hry, verze souborů, nastavení kvízu */
+echo "Hlasování předem, pravidla hry (úprava moderátorem), verze souborů, nastavení kvízu\n";
+$ev = newGame($qid, ['default_time_limit' => 10, 'early_vote' => true]);
+join_($ev, 'Eda');
+ok('stav hry nese early_vote', v(hostState($ev), 'game.early_vote') === true);
+ok('výchozí: early_vote vypnuto', v(hostState($gf), 'game.early_vote') === false);
+
+$br = hostState($ev);
+ok('stav obsahuje otisk verze souborů (build)', is_string($br['build'] ?? null) && $br['build'] !== '');
+[, $nc2] = http('GET', '/api/state.php?game=' . $ev['pin'] . '&role=host&token=' . $ev['host_token'] . '&since=' . $br['version']);
+ok('i odpověď changed:false nese build', ($nc2['build'] ?? '') === $br['build']);
+
+$rl = http('GET', '/api/host_rules.php?pin=' . $ev['pin'] . '&key=' . $ev['host_token'])[1];
+$rkeys = array_column($rl['defs'] ?? [], 'key');
+ok('pravidla: obsahují všechna nová nastavení', !array_diff(['end_mode', 'pre_countdown_enabled', 'pre_countdown_seconds', 'early_vote', 'reveal_seconds'], $rkeys));
+ok('pravidla: v čekárně jdou upravit', ($rl['editable'] ?? false) === true && ($rl['phase'] ?? '') === 'lobby');
+$lockedKeys = array_column(array_filter($rl['defs'] ?? [], fn($d) => !empty($d['locked'])), 'key');
+sort($lockedKeys);
+ok('pravidla: za hry nejde změnit jen míchání otázek a odpovědí (locked)', $lockedKeys === ['shuffle_answers', 'shuffle_questions']);
+ok('pravidla: špatný klíč → 403', http('GET', '/api/host_rules.php?pin=' . $ev['pin'] . '&key=spatny')[0] === 403);
+$sv = http('POST', '/api/host_rules.php', ['pin' => $ev['pin'], 'key' => $ev['host_token'], 'values' => [
+    'end_mode' => 'limit', 'reveal_seconds' => 7, 'early_vote' => false, 'shuffle_questions' => true, 'neexistuje' => 1]]);
+ok('pravidla: uložení v čekárně vrátí počet změn (3, míchání se ignoruje)', ($sv[1]['changed'] ?? -1) === 3, json_encode($sv[1]));
+$rl2 = http('GET', '/api/host_rules.php?pin=' . $ev['pin'] . '&key=' . $ev['host_token'])[1];
+ok('pravidla: změny se propsaly (reveal_seconds 7, early_vote vypnuto, limit beze změny)',
+    ($rl2['values']['reveal_seconds'] ?? 0) === 7 && ($rl2['values']['early_vote'] ?? true) === false && ($rl2['values']['default_time_limit'] ?? 0) === 10);
+ok('pravidla: změna se projeví ve stavu hry (early_vote vypnuto)', v(hostState($ev), 'game.early_vote') === false);
+$bad = http('POST', '/api/host_rules.php', ['pin' => $ev['pin'], 'key' => $ev['host_token'], 'values' => ['reveal_seconds' => 'abc']]);
+ok('pravidla: neplatná hodnota → 422', $bad[0] === 422);
+host($ev, 'start');
+$run = http('POST', '/api/host_rules.php', ['pin' => $ev['pin'], 'key' => $ev['host_token'], 'values' => ['reveal_seconds' => 9]]);
+ok('pravidla: za běhu hry (bez pauzy) upravit nejdou → 422', $run[0] === 422);
+host($ev, 'pause');
+$rp = http('GET', '/api/host_rules.php?pin=' . $ev['pin'] . '&key=' . $ev['host_token'])[1];
+ok('pravidla: po pauze jdou upravit', ($rp['editable'] ?? false) === true);
+$pp = http('POST', '/api/host_rules.php', ['pin' => $ev['pin'], 'key' => $ev['host_token'], 'values' => ['reveal_seconds' => 9, 'end_mode' => 'all']]);
+ok('pravidla: uložení po pauze', $pp[0] === 200 && ($pp[1]['changed'] ?? 0) === 2);
+
+$sd = admin('/api/admin_settings.php');
+$newKeys = ['end_mode', 'pre_countdown_enabled', 'pre_countdown_seconds', 'early_vote', 'reveal_seconds'];
+$flags = [];
+foreach ($sd['defs'] ?? [] as $d) {
+    if (in_array($d['key'], $newKeys, true)) {
+        $flags[$d['key']] = !empty($d['quiz']) && ($d['tab'] ?? '') === 'game' && !empty($d['group']);
+    }
+}
+ok('nastavení: všech 5 nových je v záložce Hra, ve skupině a lze je přepsat u kvízu a hry', count($flags) === 5 && !in_array(false, $flags, true), json_encode($flags));
+$qs = newQuiz([['type' => 'choice', 'text' => 'Test?', 'options' => [$opt('A', true), $opt('B', false)]]], '__test_nastaveni__');
+admin('/api/admin_quiz.php', ['id' => $qs, 'title' => '__test_nastaveni__', 'questions' => [['type' => 'choice', 'text' => 'Test?', 'options' => [$opt('A', true), $opt('B', false)]]],
+    'settings' => ['pre_countdown_enabled' => true, 'pre_countdown_seconds' => 4, 'early_vote' => true, 'end_mode' => 'limit', 'reveal_seconds' => 5]]);
+$qread = admin('/api/admin_quiz.php?id=' . $qs);
+ok('nastavení kvízu: nová nastavení se uložila', ($qread['settings']['pre_countdown_seconds'] ?? 0) === 4 && ($qread['settings']['early_vote'] ?? false) === true && ($qread['settings']['reveal_seconds'] ?? 0) === 5);
+$gq2 = newGame($qs, []);
+join_($gq2, 'Qéčko');
+$s2 = hostState($gq2);
+ok('hra bez přepisů převezme nastavení kvízu (odpočet 4 s, hlasování předem)', v($s2, 'game.pre_countdown') === 4 && v($s2, 'game.early_vote') === true);
+$gq3 = newGame($qs, ['pre_countdown_seconds' => 9, 'early_vote' => false]);
+join_($gq3, 'Qéčko');
+$s3 = hostState($gq3);
+ok('přepis při spuštění hry má přednost před nastavením kvízu', v($s3, 'game.pre_countdown') === 9 && v($s3, 'game.early_vote') === false);
+
+/* ---- změna limitu a bodů za hry, pravidla pro hráče ---- */
+echo "Změna limitu a bodů za hry, pravidla pro hráče\n";
+$qr = newQuiz([
+    ['type' => 'choice', 'text' => 'Výchozí 1', 'options' => [$opt('A', true), $opt('B', false)]],
+    ['type' => 'choice', 'text' => 'Vlastní', 'time_limit' => 40, 'points' => 500, 'options' => [$opt('A', true), $opt('B', false)]],
+    ['type' => 'choice', 'text' => 'Výchozí 3', 'options' => [$opt('A', true), $opt('B', false)]],
+], '__test_limity__');
+$gl = newGame($qr, ['default_time_limit' => 10, 'default_points' => 1000, 'leaderboard_mode' => 'never']);
+join_($gl, 'Limit');
+$rpost = fn(array $vals) => http('POST', '/api/host_rules.php', ['pin' => $gl['pin'], 'key' => $gl['host_token'], 'values' => $vals]);
+ok('limit a body se v čekárně dají změnit', $rpost(['default_time_limit' => 25, 'default_points' => 700])[0] === 200);
+host($gl, 'start');
+$l0 = hostState($gl);
+ok('první otázka dostala nový limit 25 s a body 700', v($l0, 'question.time_limit') === 25 && v($l0, 'question.points') === 700);
+host($gl, 'pause');
+ok('po pauze jdou limit a body změnit dál', $rpost(['default_time_limit' => 15, 'default_points' => 300])[0] === 200);
+$l0b = hostState($gl);
+ok('běžící otázka se tím nemění (25 s, 700 b.)', v($l0b, 'question.time_limit') === 25 && v($l0b, 'question.points') === 700);
+host($gl, 'resume');
+host($gl, 'next');   // uzavře otázku 1
+host($gl, 'next');   // další otázka (průběžné pořadí je vypnuto)
+$l1 = hostState($gl);
+ok('otázka s vlastním limitem a body zůstala (40 s, 500 b.)', v($l1, 'question.time_limit') === 40 && v($l1, 'question.points') === 500, json_encode([v($l1, 'phase'), v($l1, 'question.time_limit')]));
+host($gl, 'next');
+host($gl, 'next');
+$l2 = hostState($gl);
+ok('další otázka bez vlastní hodnoty převzala změnu (15 s, 300 b.)', v($l2, 'question.time_limit') === 15 && v($l2, 'question.points') === 300);
+
+$pr = http('GET', '/api/rules.php?game=' . $gq2['pin'])[1];
+$pkeys = array_column($pr['defs'] ?? [], 'key');
+ok('pravidla pro hráče: čtení bez klíče, nejsou editovatelná', ($pr['editable'] ?? true) === false && count($pkeys) > 5);
+ok('pravidla pro hráče: obsahují hlasování a body, ne technická nastavení', in_array('allow_change_answer', $pkeys, true) && in_array('streak_bonus', $pkeys, true) && !in_array('max_players', $pkeys, true) && !in_array('poll_interval_ms', $pkeys, true));
+ok('pravidla pro hráče: délka odpočtu je vidět, když je odpočet zapnutý', in_array('pre_countdown_seconds', $pkeys, true));
+$pr2 = http('GET', '/api/rules.php?game=' . $gf['pin'])[1];
+ok('pravidla pro hráče: délka odpočtu se skryje, když je odpočet vypnutý', !in_array('pre_countdown_seconds', array_column($pr2['defs'] ?? [], 'key'), true));
+ok('pravidla pro hráče: žádný klíč moderátora v odpovědi', !str_contains(json_encode($pr), $gq2['host_token']));
+ok('pravidla pro hráče: neexistující hra → 404', http('GET', '/api/rules.php?game=000000')[0] === 404);
 
 $gr = newGame($qid, ['default_time_limit' => 0, 'allow_change_answer' => false, 'auto_advance' => true, 'auto_advance_delay' => 30, 'reveal_seconds' => 3]);
 $r1 = join_($gr, 'Radek');

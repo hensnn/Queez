@@ -60,6 +60,44 @@ async function act(fn) { // spustí akci a zobrazí chybu jako toast
 
 const fmt = (d, v) => (v === 0 && d.zero_label ? d.zero_label : v + (d.unit || ''));
 
+/* ---------- zabalovací přehled nastavení: kategorie (záložka) → podkategorie (skupina) ---------- */
+function groupDefs(ds) {
+  const groups = [];
+  let cur = null;
+  for (const d of ds) {
+    const name = d.group || '';
+    if (!cur || cur.name !== name) { cur = { name, rows: [] }; groups.push(cur); }
+    cur.rows.push(d);
+  }
+  return groups;
+}
+
+/** Tlačítka „Rozbalit vše / Sbalit vše“ pro všechny <details> uvnitř prvku root. */
+function expandBar(root) {
+  const setAll = open => root.querySelectorAll('details').forEach(x => { x.open = open; });
+  return h('div', { class: 'row accbar' },
+    h('button', { class: 'small', onclick: () => setAll(true) }, 'Rozbalit vše'),
+    h('button', { class: 'small', onclick: () => setAll(false) }, 'Sbalit vše'));
+}
+
+/** Podkategorie (skupiny) jedné záložky jako zabalovací oddíly; bez skupin vrátí řádky přímo. */
+function groupedRows(ds, rowFn, openFirst) {
+  const groups = groupDefs(ds);
+  return groups.map((g, i) => g.name
+    ? h('details', { class: 'acc sub', open: openFirst && i === 0 },
+        h('summary', {}, g.name, h('span', { class: 'count' }, g.rows.length)), g.rows.map(rowFn))
+    : g.rows.map(rowFn)).flat();
+}
+
+/** Celý přehled: kategorie (Hra, Hlasatel…) → podkategorie. rowFn(def) vytvoří řádek jednoho nastavení. */
+function settingsAccordion(defs, rowFn) {
+  const root = h('div', { class: 'accroot' });
+  const cats = S.tabs.map(t => ({ t, ds: defs.filter(d => d.tab === t.key) })).filter(c => c.ds.length);
+  root.append(expandBar(root), ...cats.map((c, ci) => h('details', { class: 'acc', open: ci === 0 },
+    h('summary', {}, c.t.title, h('span', { class: 'count' }, c.ds.length)), groupedRows(c.ds, rowFn, ci === 0))));
+  return root;
+}
+
 /* ---------- ovládací prvky podle definice nastavení ---------- */
 function control(d, value, onchange) {
   switch (d.type) {
@@ -249,27 +287,25 @@ async function viewEditor(id) {
   // --- nastavení kvízu (přepisy globálních výchozích hodnot)
   const quizDefs = Object.values(S.defs).filter(d => d.quiz);
   const setBox = h('div');
-  const drawSettings = () => {
-    setBox.replaceChildren(...quizDefs.map(d => {
-      const over = d.key in Q.settings;
-      const slot = h('div', { class: 'grow' });
-      const drawSlot = () => {
-        const isOver = d.key in Q.settings;
-        slot.replaceChildren(isOver
-          ? control(d, Q.settings[d.key], v => { Q.settings[d.key] = v; touch(); })
-          : h('span', { class: 'muted' }, 'výchozí: ' + (d.type === 'bool' ? (S.values[d.key] ? 'ano' : 'ne')
-            : d.type === 'select' ? d.options[S.values[d.key]] : fmt(d, S.values[d.key]))));
-      };
-      drawSlot();
-      return h('div', { class: 'setting' },
-        h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, (d.tab === 'tts' && d.group ? '🔊 Hlasatel – ' + d.group + ': ' : '') + d.help)),
-        h('div', { class: 'row' },
-          h('label', { class: 'row muted' }, h('input', { type: 'checkbox', checked: over, onchange: e => {
-            if (e.target.checked) Q.settings[d.key] = S.values[d.key]; else delete Q.settings[d.key];
-            touch(); drawSlot();
-          } }), 'přepsat'), slot));
-    }));
+  const settingRow = d => {
+    const slot = h('div', { class: 'grow' });
+    const drawSlot = () => {
+      const isOver = d.key in Q.settings;
+      slot.replaceChildren(isOver
+        ? control(d, Q.settings[d.key], v => { Q.settings[d.key] = v; touch(); })
+        : h('span', { class: 'muted' }, 'výchozí: ' + (d.type === 'bool' ? (S.values[d.key] ? 'ano' : 'ne')
+          : d.type === 'select' ? d.options[S.values[d.key]] : fmt(d, S.values[d.key]))));
+    };
+    drawSlot();
+    return h('div', { class: 'setting' },
+      h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, d.help)),
+      h('div', { class: 'row' },
+        h('label', { class: 'row muted' }, h('input', { type: 'checkbox', checked: d.key in Q.settings, onchange: e => {
+          if (e.target.checked) Q.settings[d.key] = S.values[d.key]; else delete Q.settings[d.key];
+          touch(); drawSlot();
+        } }), 'přepsat'), slot));
   };
+  const drawSettings = () => setBox.replaceChildren(settingsAccordion(quizDefs, settingRow));
   drawSettings();
 
   // --- otázky
@@ -478,8 +514,8 @@ async function viewStart(id) {
   const base = { ...S.values, ...(Array.isArray(Q.settings) ? {} : Q.settings) };
   const over = {};
   let mode = 'screen';
-  const rows = Object.values(S.defs).filter(d => d.quiz).map(d => h('div', { class: 'setting' },
-    h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, (d.tab === 'tts' && d.group ? '🔊 Hlasatel – ' + d.group + ': ' : '') + d.help)),
+  const rows = settingsAccordion(Object.values(S.defs).filter(d => d.quiz), d => h('div', { class: 'setting' },
+    h('div', {}, h('strong', {}, d.label), h('div', { class: 'muted' }, d.help)),
     control(d, base[d.key], v => { over[d.key] = v; })));
   const modeSel = h('select', { onchange: e => { mode = e.target.value; } },
     h('option', { value: 'screen' }, 'Velká obrazovka (projektor / TV)'),
@@ -487,7 +523,7 @@ async function viewStart(id) {
   layout('quizzes', [
     h('div', { class: 'row between' }, h('h1', {}, 'Spustit hru: ' + Q.title), h('a', { href: '#/quizzes' }, '← zpět')),
     h('div', { class: 'card' }, h('label', { class: 'f' }, 'Režim zobrazení'), modeSel),
-    h('details', { class: 'card' }, h('summary', {}, 'Nastavení této hry (volitelné)'),
+    h('details', { class: 'card', open: true }, h('summary', {}, 'Nastavení této hry (volitelné)'),
       h('p', { class: 'muted' }, 'Předvyplněno z globálního nastavení a nastavení kvízu. Změny platí jen pro tuto hru.'), rows),
     h('div', { class: 'savebar' }, h('button', { class: 'primary', onclick: () => act(async () => {
       const g = await api('admin_games.php', { body: { action: 'create', quiz_id: id, mode, settings: over } });
@@ -519,16 +555,18 @@ const edits = {};
 async function viewSettings(tab) {
   await loadSettings();
   const t = S.tabs.find(x => x.key === tab) || S.tabs[0];
-  let prevGroup = null;
-  const rows = Object.values(S.defs).filter(d => d.tab === t.key).flatMap(d => {
+  const tabDefs = Object.values(S.defs).filter(d => d.tab === t.key);
+  const rowOf = d => {
     const cur = d.key in edits ? edits[d.key] : S.values[d.key];
-    const head = d.group && d.group !== prevGroup ? h('h3', { class: 'group' }, d.group) : null;
-    prevGroup = d.group || prevGroup;
-    return [head, h('div', { class: 'setting' },
+    return h('div', { class: 'setting' },
       h('strong', {}, d.label),
       control(d, cur, v => { edits[d.key] = v; dirty = true; }),
-      d.help ? h('div', { class: 'help muted' }, d.help) : null)];
-  });
+      d.help ? h('div', { class: 'help muted' }, d.help) : null);
+  };
+  const hasGroups = tabDefs.some(d => d.group);
+  const rowsBox = h('div', { class: 'accroot' });
+  rowsBox.append(...groupedRows(tabDefs, rowOf, true));
+  const rows = [hasGroups ? expandBar(rowsBox) : null, rowsBox];
   const extra = [];
   if (t.key === 'gemini') extra.push(await geminiKeyCard(), categoriesCard());
   if (t.key === 'tts') extra.push(voiceTestCard(), beepTestCard());

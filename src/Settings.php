@@ -83,13 +83,19 @@ TXT;
                 'label' => 'Více správných odpovědí', 'help' => 'Jak se bodují otázky s více správnými možnostmi.'],
             'allow_change_answer' => ['tab' => 'game', 'type' => 'bool', 'default' => true, 'quiz' => true,
                 'label' => 'Povolit změnu odpovědi', 'help' => 'Hráč může odpověď změnit do konce limitu.'],
-            'end_on_all_answered' => ['tab' => 'game', 'type' => 'bool', 'default' => false, 'quiz' => true,
-                'label' => 'Ukončit otázku, jakmile odpoví všichni', 'help' => 'Když odpoví poslední hráč, limit nečeká do konce a hra rovnou pokračuje na odhalení. Pak už nejde odpověď změnit. Při vypnuté změně odpovědi se otázka takto ukončuje vždy.'],
+            'end_mode' => ['tab' => 'game', 'type' => 'select', 'default' => 'all', 'quiz' => true,
+                'options' => [
+                    'all'   => 'Hned, jakmile odpoví všichni hráči',
+                    'limit' => 'Až po uplynutí časového limitu',
+                ],
+                'label' => 'Kdy se hlasování ukončí', 'help' => 'Hned: jakmile odpoví poslední hráč, limit nečeká do konce a hra pokračuje na odhalení (odpověď už pak nejde změnit). Až po limitu: hráči mohou odpověď měnit celý limit.'],
             'pre_countdown_enabled' => ['tab' => 'game', 'type' => 'bool', 'default' => false, 'quiz' => true,
-                'label' => 'Odpočet před začátkem hlasování', 'help' => 'Po zobrazení otázky se nejdřív odpočítá krátká doba, kdy se ještě nedá hlasovat (hráči si otázku přečtou). Po nule se hlasování otevře a začne běžet časový limit. Jen u hry s obrazovkou; v hlasovém režimu se otázka předčítá.'],
+                'label' => 'Odpočet před začátkem hlasování', 'help' => 'Po zobrazení otázky se nejdřív odpočítá krátká doba, kdy se ještě nedá hlasovat (hráči si otázku přečtou). Po nule se hlasování otevře a začne běžet časový limit. V hlasovém režimu začíná odpočet až po dočtení otázky (nahrazuje dřívější „prodlevu po dočtení“).'],
             'pre_countdown_seconds' => ['tab' => 'game', 'type' => 'int', 'min' => 1, 'max' => 30, 'step' => 1, 'default' => 3,
                 'unit' => ' s', 'quiz' => true,
                 'label' => 'Délka odpočtu před hlasováním', 'help' => 'Používá se jen při zapnutém odpočtu výše. Do časového limitu otázky se nepočítá.'],
+            'early_vote' => ['tab' => 'game', 'type' => 'bool', 'default' => false, 'quiz' => true,
+                'label' => 'Povolit vybrat odpověď už při čtení a odpočtu', 'help' => 'Tlačítka na telefonech jsou odemčená hned po zobrazení otázky (i při předčítání nebo odpočtu před hlasováním). Vybraná odpověď se ale odešle až ve chvíli, kdy se hlasování otevře, a čas se počítá od tohoto okamžiku. Do té doby ji hráč může přepsat.'],
             'show_correct_to_player' => ['tab' => 'game', 'type' => 'bool', 'default' => true, 'quiz' => true,
                 'label' => 'Hned po odpovědi ukázat, zda byla správná', 'help' => 'Jinak se to dozví až po skončení otázky.'],
             'secret_voting' => ['tab' => 'game', 'type' => 'bool', 'default' => false, 'quiz' => true,
@@ -134,11 +140,11 @@ TXT;
             'auto_advance' => ['tab' => 'game', 'type' => 'bool', 'default' => false, 'quiz' => true,
                 'label' => 'Automatický postup na další otázku', 'help' => 'Jinak postupuje moderátor ručně.'],
             'reveal_seconds' => ['tab' => 'game', 'type' => 'int', 'min' => 0, 'max' => 60, 'step' => 1, 'default' => 0,
-                'unit' => ' s', 'zero_label' => 'stejná jako prodleva níže', 'quiz' => true,
-                'label' => 'Čas na vyhodnocení odpovědi', 'help' => 'Jak dlouho se při automatickém postupu drží obrazovka se správnou odpovědí, než se přejde na pořadí nebo další otázku. Platí jen při zapnutém automatickém postupu.'],
+                'unit' => ' s', 'zero_label' => 'stejná jako u pořadí', 'quiz' => true,
+                'label' => 'Doba zobrazení správné odpovědi', 'help' => 'Jak dlouho se při automatickém postupu drží obrazovka se správnou odpovědí, než se přejde na pořadí nebo další otázku. Platí jen při zapnutém automatickém postupu.'],
             'auto_advance_delay' => ['tab' => 'game', 'type' => 'int', 'min' => 3, 'max' => 30, 'step' => 1, 'default' => 8,
                 'unit' => ' s', 'quiz' => true,
-                'label' => 'Prodleva před další otázkou', 'help' => 'Jak dlouho se při automatickém postupu drží pořadí hráčů (a správná odpověď, není-li nastaven vlastní čas na vyhodnocení výše).'],
+                'label' => 'Doba zobrazení pořadí', 'help' => 'Jak dlouho se při automatickém postupu drží pořadí hráčů, než přijde další otázka. Není-li nastavena vlastní doba zobrazení správné odpovědi, platí i pro ni.'],
             'max_players' => ['tab' => 'game', 'type' => 'int', 'min' => 2, 'max' => 200, 'step' => 1, 'default' => 50,
                 'quiz' => true,
                 'label' => 'Max. počet hráčů', 'help' => 'Další hráči se nepřipojí.'],
@@ -184,8 +190,6 @@ TXT;
                 'label' => 'Říkat, kolik je za otázku bodů', 'help' => '„Za správnou odpověď je tisíc bodů.“ (u ankety se neříká)'],
             'tts_say_limit' => ['tab' => 'tts', 'group' => 'Otázka', 'type' => 'bool', 'default' => false, 'quiz' => true,
                 'label' => 'Říkat časový limit', 'help' => '„Na odpověď máte dvacet sekund.“ (u otázky bez limitu se neříká)'],
-            'tts_read_delay' => ['tab' => 'tts', 'group' => 'Otázka', 'type' => 'int', 'min' => 0, 'max' => 15, 'step' => 1, 'default' => 2,
-                'unit' => ' s', 'quiz' => true, 'label' => 'Prodleva po dočtení otázky', 'help' => 'Jen hlasový režim: odpočet začne až tolik vteřin po dočtení otázky.'],
 
             'tts_read_countdown' => ['tab' => 'tts', 'group' => 'Čas', 'type' => 'bool', 'default' => true, 'quiz' => true,
                 'label' => 'Upozornit před koncem limitu', 'help' => 'Řekne třeba „Zbývá pět sekund.“ Kolik vteřin před koncem se nastavuje v záložce Hra („Upozornit na konec limitu“).'],
@@ -243,10 +247,37 @@ TXT;
                 'unit' => ' dní', 'zero_label' => 'nikdy nemazat',
                 'label' => 'Automaticky mazat hry starší než', 'help' => 'Smaže se hra i její hráči a odpovědi.'],
         ];
+        $d = self::arrangeGame($d);
         foreach ($d as $k => &$def) {
             $def['key'] = $k;
         }
         return $d;
+    }
+
+    /** Pořadí a seskupení nastavení záložky Hra (skupiny se zobrazují v administraci i v pravidlech u moderátora). */
+    private const GAME_GROUPS = [
+        'Čas a hlasování' => ['default_time_limit', 'pre_countdown_enabled', 'pre_countdown_seconds', 'early_vote',
+            'allow_change_answer', 'end_mode', 'show_correct_to_player', 'secret_voting'],
+        'Body' => ['default_points', 'speed_weight', 'streak_bonus', 'streak_max', 'multi_correct_mode'],
+        'Odhalení, pořadí a postup' => ['visibility_host', 'visibility_players', 'reveal_seconds', 'leaderboard_mode',
+            'leaderboard_every', 'auto_advance', 'auto_advance_delay'],
+        'Zobrazení' => ['warn_seconds', 'phone_content', 'answer_layout'],
+        'Hráči a otázky' => ['shuffle_questions', 'shuffle_answers', 'max_players', 'allow_join_after_start', 'unique_names', 'poll_interval_ms'],
+    ];
+
+    private static function arrangeGame(array $d): array
+    {
+        $order = [];
+        foreach (self::GAME_GROUPS as $group => $keys) {
+            foreach ($keys as $k) {
+                if (isset($d[$k])) {
+                    $d[$k]['group'] = $group;
+                    $order[$k] = true;
+                }
+            }
+        }
+        $game = array_intersect_key(array_replace($order, $d), $order);
+        return $game + array_diff_key($d, $game);   // záložka Hra v pořadí skupin, ostatní beze změny
     }
 
     /** Všechny hodnoty = výchozí + uložené. */

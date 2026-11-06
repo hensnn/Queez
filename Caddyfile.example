@@ -41,9 +41,10 @@
 		file_server
 	}
 
-	# Statické soubory si prohlížeč smí krátce pamatovat
-	@assets path /assets/*
-	header @assets Cache-Control "public, max-age=300"
+	# Statické soubory a stránky: prohlížeč se před použitím zeptá, zda se změnily (ETag → odpověď 304 bez stahování).
+	# Díky tomu se po aktualizaci aplikace hned použije nový JavaScript a hráči nezůstanou na staré verzi.
+	@assets path /assets/* /play/* /host/* /admin/*
+	header @assets Cache-Control "no-cache"
 
 	header {
 		X-Content-Type-Options nosniff

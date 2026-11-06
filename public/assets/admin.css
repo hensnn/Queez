@@ -87,3 +87,14 @@ img{max-width:100%}
 }
 h3.group{margin:1.2rem 0 .2rem;padding-bottom:.3rem;border-bottom:3px solid var(--ink);font-size:1.1rem}
 h3.group:first-child{margin-top:.2rem}
+
+/* zabalovací přehled nastavení */
+details.acc{border:2.5px solid var(--ink);border-radius:14px;margin:.6rem 0;background:#fff;overflow:hidden}
+details.acc>summary{cursor:pointer;font-weight:900;padding:.55rem .9rem;background:#fff4d6;display:flex;justify-content:space-between;align-items:center}
+details.acc[open]>summary{border-bottom:2.5px solid var(--ink)}
+details.acc.sub{margin:.5rem .7rem;border-width:2px;border-radius:12px}
+details.acc.sub>summary{background:#fffaf0;font-size:.98rem}
+details.acc.sub[open]>summary{border-bottom-width:2px}
+details.acc .count{font-size:.8rem;font-weight:700;opacity:.55;background:rgba(0,0,0,.06);border-radius:999px;padding:0 .55rem}
+details.acc>.setting{margin:0 .9rem}
+.accbar{gap:.5rem;margin:.2rem 0}

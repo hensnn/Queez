@@ -79,6 +79,27 @@ const Clock = {
 };
 
 /**
+ * Hlídání verze aplikace: server posílá otisk souborů (`build`). Když se po aktualizaci změní,
+ * stránka se sama načte znovu (nikdy ne uprostřed otázky), aby neběžela na starém JavaScriptu.
+ */
+const BuildWatch = {
+  known: null,
+  stale: false,
+  see(build, phase) {
+    if (!build) return;
+    if (this.known === null) { this.known = build; return; }
+    if (build !== this.known) this.stale = true;
+    if (!this.stale || phase === 'question') return;
+    try {
+      const t = Number(sessionStorage.getItem('kviz_reloaded')) || 0;
+      if (Date.now() - t < 60000) return;   // pojistka proti smyčce
+      sessionStorage.setItem('kviz_reloaded', String(Date.now()));
+    } catch (e) { /* bez sessionStorage se jen načte znovu */ }
+    location.reload();
+  },
+};
+
+/**
  * Přenos stavu ze serveru. Dnes krátký polling; rozhraní (start/stop/poke + onState) je navržené tak,
  * aby šlo později vyměnit za SseTransport (EventSource) bez zásahu do zbytku frontendu.
  */
@@ -105,6 +126,8 @@ class PollTransport {
         Clock.sample(t0, t1, d.server_time);
         fails = 0;
         this.onStatus(true);
+        if (d.changed) this.phase = d.phase;
+        BuildWatch.see(d.build, this.phase);
         if (d.changed) {
           this.version = d.version;
           if (d.poll_interval_ms) this.interval = Math.max(500, d.poll_interval_ms);
@@ -136,6 +159,29 @@ function remainingMs(q, paused) {
   if (paused && q.paused_remaining !== null && q.paused_remaining !== undefined) return q.paused_remaining;
   if (q.ends_at === null || q.ends_at === undefined) return null;
   return Math.max(0, q.ends_at - Clock.now());
+}
+
+/** Hodnota pravidla jako čitelný text (ano/ne, text volby, číslo s jednotkou). */
+function ruleText(d, v) {
+  if (d.type === 'bool') return v ? 'ano' : 'ne';
+  if (d.type === 'select') return d.options[v] || String(v);
+  return v === 0 && d.zero_label ? d.zero_label : v + (d.unit || '');
+}
+
+/** Pravidla seskupená do zabalovacích oddílů (podle `group`); makeControl(def, hodnota) vrací ovládací prvek nebo text. */
+function ruleGroups(defs, values, makeControl) {
+  const groups = [];
+  let cur = null;
+  for (const d of defs) {
+    const name = d.group || '';
+    if (!cur || cur.name !== name) { cur = { name, rows: [] }; groups.push(cur); }
+    cur.rows.push(d);
+  }
+  return groups.map((g, i) => h('details', { class: 'rgroup', open: i === 0 },
+    h('summary', {}, g.name || 'Pravidla', h('span', { class: 'count' }, g.rows.length)),
+    g.rows.map(d => h('div', { class: 'rule' },
+      h('div', {}, h('strong', {}, d.label), h('div', { class: 'help' }, d.help)),
+      makeControl(d, values[d.key])))));
 }
 
 /** Zbývající ms do otevření hlasování (odpočet před hlasováním); 0 = hlasování už běží. */

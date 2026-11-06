@@ -249,3 +249,33 @@ body.host.voice{font-size:17px}
 .still .tile,.still .chip,.still .lb li,.still .result,.still .podium .col{animation:none}
 
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ---------------------------------------------------------------- pravidla hry (okno moderátora) */
+.modal-bg{position:fixed;inset:0;background:rgba(20,10,30,.65);z-index:60;display:flex;align-items:center;justify-content:center;padding:.6rem}
+.modal{background:var(--cream);color:var(--ink);text-shadow:none;border:3px solid var(--ink);border-radius:22px;box-shadow:0 8px 0 var(--ink);width:min(48rem,100%);max-height:94vh;display:flex;flex-direction:column;overflow:hidden}
+.modal .body{overflow-y:auto;padding:1rem 1.2rem;flex:1}
+.modal h2{margin:.1rem 0 .4rem;font-size:1.6rem}
+.modal h3{margin:1rem 0 .3rem;padding-bottom:.2rem;border-bottom:2px solid var(--ink);font-size:1.05rem}
+.modal .note{background:var(--cream2);border:2px solid var(--ink);border-radius:12px;padding:.4rem .7rem;margin:.3rem 0 .6rem;font-weight:700}
+.modal .rule{display:grid;grid-template-columns:1fr minmax(8rem,14rem);gap:.3rem .9rem;align-items:center;padding:.45rem 0;border-bottom:1px dashed rgba(45,27,61,.25)}
+.modal .rule .help{font-size:.82rem;opacity:.75;font-weight:600;margin-top:.1rem}
+.modal .rule .rv{font-weight:900;text-align:right}
+.modal .rule select{width:100%;font:inherit;padding:.25rem;border:2px solid var(--ink);border-radius:10px;background:#fff}
+.modal .rule input[type=checkbox]{width:1.5rem;height:1.5rem;justify-self:end}
+.modal .rng{display:flex;align-items:center;gap:.5rem}
+.modal .rng input{flex:1;min-width:0}
+.modal .rng output{min-width:3.2rem;text-align:right;font-weight:900}
+.modal .foot{display:flex;gap:.7rem;justify-content:flex-end;padding:.7rem 1.2rem;border-top:3px solid var(--ink);background:var(--cream2)}
+.modal .foot button{background:linear-gradient(180deg,#ffe066,var(--accent));color:var(--ink);border:3px solid var(--ink);border-radius:16px;padding:.5rem 1.2rem;font-weight:1000;font-size:1rem;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.modal .foot button.sec{background:#fff}
+@media (max-width:640px){.modal .rule{grid-template-columns:1fr}.modal .rule .rv{text-align:left}.modal .rule input[type=checkbox]{justify-self:start}}
+
+/* zabalovací oddíly pravidel a odkaz na pravidla u hráče */
+.modal details.rgroup{border:2px solid var(--ink);border-radius:12px;margin:.55rem 0;background:#fff;overflow:hidden}
+.modal details.rgroup>summary{cursor:pointer;font-weight:1000;padding:.5rem .8rem;background:var(--cream2);display:flex;justify-content:space-between;align-items:center}
+.modal details.rgroup[open]>summary{border-bottom:2px solid var(--ink)}
+.modal details.rgroup .count{font-size:.8rem;opacity:.6;font-weight:800}
+.modal details.rgroup .rule{margin:0 .8rem}
+.modal details.rgroup .rule:last-child{border-bottom:0}
+.rules-link{text-align:center;padding:.6rem 0 1.2rem}
+.rules-link button{background:rgba(255,255,255,.22);color:#fff;border:2px solid rgba(255,255,255,.7);border-radius:999px;padding:.35rem 1rem;font-weight:800;font-size:.95rem;cursor:pointer}

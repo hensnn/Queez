@@ -255,8 +255,8 @@ final class Game
                     [$g['id'], $idx, $player['id'], json_encode($c), $now]
                 );
                 Db::exec('UPDATE games SET answered_count=answered_count+1, version=version+1 WHERE id=?', [$g['id']]);
-                // Všichni odpověděli → hned uzavřít (nastavení „end_on_all_answered“, nebo když nejde odpověď měnit)
-                if (!empty($s['end_on_all_answered']) || empty($s['allow_change_answer'])) {
+                // Všichni odpověděli → hned uzavřít (nastavení „end_mode“ = all)
+                if (self::endsWhenAllAnswered($s)) {
                     $g = self::byId((int)$g['id']);
                     if ((int)$g['players_count'] > 0 && (int)$g['answered_count'] >= (int)$g['players_count']) {
                         self::closeQuestion($g);
@@ -268,11 +268,20 @@ final class Game
 
     /* ------------------------------------------------------------------ přechody fází (volat uvnitř transakce) */
 
-    /** Délka odpočtu před otevřením hlasování (ms); 0 = vypnuto. Jen hra s obrazovkou (v hlasovém režimu se otázka předčítá). */
+    /** Ukončí se otázka, jakmile odpoví všichni? (Starší hry bez „end_mode“: dle dřívějšího chování – hned, když nejde měnit odpověď.) */
+    private static function endsWhenAllAnswered(array $s): bool
+    {
+        if (isset($s['end_mode'])) {
+            return $s['end_mode'] === 'all';
+        }
+        return !empty($s['end_on_all_answered']) || empty($s['allow_change_answer']);
+    }
+
+    /** Délka odpočtu před otevřením hlasování (ms); 0 = vypnuto. V hlasovém režimu začíná až po dočtení otázky. */
     private static function preDelayMs(array $g): int
     {
         $s = $g['s'];
-        if ($g['mode'] !== 'screen' || empty($s['pre_countdown_enabled'])) {
+        if (empty($s['pre_countdown_enabled'])) {
             return 0;
         }
         return max(0, min(30, (int)($s['pre_countdown_seconds'] ?? 3))) * 1000;
@@ -316,9 +325,10 @@ final class Game
             );
             return;
         }
+        $start = $now + self::preDelayMs($g);   // případný odpočet před hlasováním
         Db::exec(
             'UPDATE games SET reading=0, question_started_at=?, question_ends_at=?, version=version+1 WHERE id=?',
-            [$now, $limitMs > 0 ? $now + $limitMs : null, $g['id']]
+            [$start, $limitMs > 0 ? $start + $limitMs : null, $g['id']]
         );
     }
 
@@ -551,6 +561,87 @@ final class Game
         });
     }
 
+    /* ------------------------------------------------------------------ pravidla hry (prohlížení a úprava moderátorem) */
+
+    /** Nastavení, která se při vytvoření hry „zapečou“ do pořadí otázek a odpovědí, takže je za běhu hry nejde změnit. */
+    private const LOCKED_RULES = ['shuffle_questions', 'shuffle_answers'];
+
+    /** Pravidla, která se ukazují hráčům na telefonu (jen ke čtení). */
+    private const PLAYER_RULES = ['default_time_limit', 'pre_countdown_enabled', 'pre_countdown_seconds', 'early_vote',
+        'allow_change_answer', 'end_mode', 'show_correct_to_player', 'secret_voting', 'default_points', 'speed_weight',
+        'streak_bonus', 'streak_max', 'multi_correct_mode', 'visibility_players', 'leaderboard_mode', 'leaderboard_every'];
+
+    /** Pravidla lze měnit v čekárně před startem a kdykoli po pozastavení hry. */
+    public static function rulesEditable(array $g): bool
+    {
+        return $g['phase'] === 'lobby' || ($g['phase'] !== 'finished' && !empty($g['paused']));
+    }
+
+    /** Pravidla hry pro moderátora: definice (záložka Hra), platné hodnoty této hry a zda jdou teď upravit. */
+    public static function rules(array $g, bool $forPlayer = false): array
+    {
+        $defs = [];
+        $values = [];
+        $s = $g['s'];
+        foreach (Settings::defs() as $k => $d) {
+            if ($d['tab'] !== 'game' || empty($d['quiz'])) {
+                continue;
+            }
+            if ($forPlayer) {
+                // hráčům jen to, co se jich týká; nastavení, která právě nic nedělají, se nezobrazují
+                if (!in_array($k, self::PLAYER_RULES, true)
+                    || ($k === 'pre_countdown_seconds' && empty($s['pre_countdown_enabled']))
+                    || ($k === 'leaderboard_every' && ($s['leaderboard_mode'] ?? 'every') !== 'interval')
+                    || ($k === 'streak_max' && (int)($s['streak_bonus'] ?? 0) === 0)) {
+                    continue;
+                }
+            }
+            $d['locked'] = in_array($k, self::LOCKED_RULES, true);
+            $defs[] = $d;
+            $values[$k] = $g['s'][$k] ?? $d['default'];
+        }
+        return ['defs' => $defs, 'values' => $values, 'editable' => !$forPlayer && self::rulesEditable($g), 'mode' => $g['mode'], 'phase' => $g['phase']];
+    }
+
+    /** Uloží změněná pravidla této hry (jen klíče, které jde za běhu měnit). Vrací počet změněných hodnot. */
+    public static function updateRules(array $g, $values): int
+    {
+        if (!is_array($values)) {
+            throw new InvalidArgumentException('Chybí hodnoty pravidel.');
+        }
+        return Db::tx(function () use ($g, $values) {
+            $g = self::byId((int)$g['id']);
+            if (!$g || !self::rulesEditable($g)) {
+                throw new InvalidArgumentException('Pravidla jde měnit jen před startem hry nebo po pozastavení.');
+            }
+            $clean = array_diff_key(Settings::cleanQuiz($values), array_flip(self::LOCKED_RULES));
+            $changed = 0;
+            foreach ($clean as $k => $v) {
+                if (($g['s'][$k] ?? null) !== $v) {
+                    $changed++;
+                }
+            }
+            if ($changed > 0) {
+                // Limit a body platí pro otázky, které ještě nezačaly (a jen tam, kde otázka nemá vlastní hodnotu).
+                $from = $g['phase'] === 'lobby' ? 0 : (int)$g['current_index'] + 1;
+                if (array_key_exists('default_time_limit', $clean) && $clean['default_time_limit'] !== ($g['s']['default_time_limit'] ?? null)) {
+                    Db::exec('UPDATE game_questions SET time_limit=? WHERE game_id=? AND idx>=?
+                              AND question_id IN (SELECT id FROM questions WHERE time_limit IS NULL)',
+                        [$clean['default_time_limit'], $g['id'], $from]);
+                }
+                if (array_key_exists('default_points', $clean) && $clean['default_points'] !== ($g['s']['default_points'] ?? null)) {
+                    Db::exec("UPDATE game_questions SET points=? WHERE game_id=? AND idx>=? AND type<>'poll'
+                              AND question_id IN (SELECT id FROM questions WHERE points IS NULL)",
+                        [$clean['default_points'], $g['id'], $from]);
+                }
+                $s = array_merge($g['s'], $clean);
+                Db::exec('UPDATE games SET settings_json=?, version=version+1 WHERE id=?',
+                    [json_encode($s, JSON_UNESCAPED_UNICODE), $g['id']]);
+            }
+            return $changed;
+        });
+    }
+
     /* ------------------------------------------------------------------ stav pro klienty */
 
     /** Které rozložení hlasů smí daná role teď vidět: none | live | final. */
@@ -600,6 +691,7 @@ final class Game
 
         $out = [
             'changed'          => true,
+            'build'            => Assets::build(),
             'version'          => (int)$g['version'],
             'server_time'      => now_ms(),
             'phase'            => $phase,
@@ -619,6 +711,7 @@ final class Game
                 'lb_next'             => $phase === 'reveal' ? self::showLeaderboardAfter($g) : true,
                 'allow_change_answer' => !empty($s['allow_change_answer']),
                 'pre_countdown'       => intdiv(self::preDelayMs($g), 1000),
+                'early_vote'          => !empty($s['early_vote']),
                 'auto_advance'        => !empty($s['auto_advance']),
             ],
         ];
@@ -689,7 +782,6 @@ final class Game
                 'read_options'     => $flag('tts_read_options', true),
                 'say_points'       => $flag('tts_say_points'),
                 'say_limit'        => $flag('tts_say_limit'),
-                'read_delay'       => (int)($s['tts_read_delay'] ?? 2),
                 'read_countdown'   => $flag('tts_read_countdown', true),
                 'warn_half'        => $flag('tts_warn_half'),
                 'warn_final'       => $flag('tts_warn_final'),

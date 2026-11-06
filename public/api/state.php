@@ -32,7 +32,7 @@ Http::run(function () {
 
     $g = Game::tick($g);
     if ($since === (int)$g['version']) {
-        return ['changed' => false, 'version' => (int)$g['version'], 'server_time' => now_ms()];
+        return ['changed' => false, 'version' => (int)$g['version'], 'server_time' => now_ms(), 'build' => Assets::build()];
     }
     return Game::state($g, $role, $player ? (int)$player['id'] : null);
 });
