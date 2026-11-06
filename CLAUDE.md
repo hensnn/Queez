@@ -30,10 +30,11 @@ php tests/run.php --url=http://127.0.0.1:8000 --password=testovaci-heslo      # 
 php tools/loadtest.php --url=http://127.0.0.1:8000 --password=... --players=24  # zátěž: všichni hráči pollují naráz
 ```
 
-- `tests/run.php` si vytvoří dočasný kvíz a hry a na konci je smaže. Spouštějte jen proti vývojové instalaci.
+- `tests/run.php` si vytvoří dočasný kvíz a hry a na konci je smaže. Spouštějte jen proti vývojové instalaci. Stav k poslednímu commitu: **107 kontrol, 0 chyb** (běží ~1,5 min, protože část testů čeká na časovače). Nový test patří do sekce podle tématu (`ok('popis', podmínka)`); pomocníci `newGame()`, `join_()`, `host()`, `hostState()`, `answer()`, `v()` jsou na začátku souboru.
+- Zátěžový test s 24 hráči na vestavěném `php -S` slouží jen jako kontrola správnosti (v poslední kontrole p95 ≈ 130 ms, 0 chyb); výkon se posuzuje na PHP-FPM.
 - Gemini jde testovat bez klíče: `php -S 127.0.0.1:8001 tests/fake_gemini.php` a do `config.php` přidejte `'gemini_base_url' => 'http://127.0.0.1:8001'`
   (v adminu uložte libovolný klíč; chování podle začátku klíče je popsané v záhlaví `tests/fake_gemini.php`, vrací i záměrně vadné otázky a audio pro TTS).
-  Skutečné API zatím vyzkoušeno nebylo (viz „Neověřené“).
+  Skutečné API zatím vyzkoušeno nebylo (viz „Neověřené“). Po testu `gemini_base_url` z `config.php` zase zakomentujte a smažte uložený testovací klíč (Nastavení → Gemini).
 - Po změně JS/CSS ověřte v prohlížeči na mobilní šířce (360 px) i desktopu; měřit lze `document.documentElement.scrollWidth > innerWidth`.
 
 ## Architektura
@@ -145,6 +146,14 @@ Vzorec je popsán uživateli v Nastavení → Hra (`Settings::tabs()`), při zm�
 - Animace „vyskočení“ se spouští jen při změně obrazovky (třída `still` na `#app`), jinak by blikaly při každém pollu.
 - **Pozor na pořadí:** odpočet hráče se zastavuje funkcí `stopTick()` v `render()` **před** vytvořením obrazovky (obrazovka si spouští vlastní interval).
 
+## Postup změny (osvědčený)
+
+1. Úprava → `php -l` na změněných `.php`, `node --check` na změněných `.js`.
+2. Lokální server `php -S 127.0.0.1:8000 -t public` + `php tests/run.php …` (musí projít vše), v prohlížeči zkontrolovat změněné obrazovky (hráč, moderátor, admin).
+3. Nové nastavení: jen do `Settings::defs()` (+ případně `GAME_GROUPS`); nové chování do `Game`; nový test do `tests/run.php`; popis do tohoto souboru (a do README, jde-li o věc, kterou uživatel ovládá).
+4. Sken citlivých údajů (viz Konvence), commit jako `hensnn`, push až po souhlasu uživatele, pak na serveru `git pull --ff-only`.
+5. Po testech uklidit: smazat `data/`, `logs/`, `tests/last_request.json`, `tests/tts_calls.txt` v lokální kopii (jsou v `.gitignore`).
+
 ## Konvence
 
 - PHP: `declare(strict_types=1)`, prepared statements všude, žádné závislosti (bez Composeru). Komentáře a hlášky česky.
@@ -180,8 +189,15 @@ Vzorec je popsán uživateli v Nastavení → Hra (`Settings::tabs()`), při zm�
 - Zátěž byla ověřena na produkčním PHP-FPM (24 hráčů naráz, p95 ≈ 30 ms), ale ne dlouhodobě ani nad ~50 hráčů.
 - Obnova ze zálohy DB (`Db::restore`) nemigruje nic navíc kromě standardního `migrate()` při dalším otevření.
 
+## Otevřené body (k ověření při příští hře)
+
+- Hlasový režim s odpočtem před hlasováním a hlasování předem (`early_vote`) na více skutečných telefonech.
+- Hlas a pípání na zařízení moderátora, chování Gemini TTS na živém API.
+
 ## Nápady do budoucna
 
+- Aktualizovat ukázkový snímek `docs/img/admin-settings.jpg` (nastavení je teď v zabalovacích oddílech).
+- Rozložení „Nastavení této hry“ při spuštění na záložky podle kategorií (dnes zabalovací oddíly pod sebou).
 - Úprava nabídky podkategorií v adminu (dnes pevně v `Defaults::SUBCATEGORIES`).
 - SSE místo pollingu (`PollTransport` je na to připravený).
 - Týmový režim, časový bonus za sérii, export statistik po otázkách.

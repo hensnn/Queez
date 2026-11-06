@@ -178,6 +178,16 @@ Když něco nejde, podívejte se do `/var/www/kviz/logs/error.log` (kapitola 9).
 3. Moderátor klikne na **Start hry** a dál hru ovládá tlačítky (nebo klávesou Enter / mezerník).
 4. Odkaz na obrazovku moderátora obsahuje tajný klíč. Najdete ho v adminu v části **Hry** (tlačítko Otevřít), takže ho lze otevřít i na jiném zařízení. **Nikomu ho neposílejte.**
 
+### Pravidla hry a nastavení
+
+Každou hru lze přizpůsobit. Nastavení má tři úrovně: **globální** (Nastavení → Hra), **kvíz** (u kvízu políčko „přepsat“) a **konkrétní hra** (při spuštění). Nastavení jsou v zabalovacích oddílech (kategorie → podkategorie) s tlačítky „Rozbalit vše / Sbalit vše“.
+
+- **Kdy se hlasování ukončí:** hned, jakmile odpoví všichni hráči, nebo až po uplynutí limitu (pak jde odpověď měnit celý limit).
+- **Odpočet před začátkem hlasování:** po zobrazení otázky se nejdřív odpočítá zvolená doba (1–30 s), kdy se ještě nehlasuje; po nule se hlasování otevře a začne běžet limit. V hlasovém režimu odpočet začíná až po dočtení otázky.
+- **Vybrat odpověď už při čtení a odpočtu:** tlačítka jsou odemčená hned, vybraná odpověď se ale odešle až při otevření hlasování (do té doby ji hráč může přepsat).
+- **Doba zobrazení správné odpovědi** a **doba zobrazení pořadí** při automatickém postupu.
+- **📋 Pravidla** na obrazovce moderátora: přehled pravidel této hry. V čekárně před startem a po stisknutí **Pauza** je lze upravit (časový limit a body se změní od další otázky, míchání otázek a odpovědí za hry měnit nejde). Hráči mají totéž jen ke čtení v tlačítku **📋 Pravidla hry** na telefonu.
+
 ### Hlasový režim (bez velké obrazovky)
 
 Při spuštění hry zvolte **Režim zobrazení → Bez obrazovky – hlasový režim**.
@@ -185,7 +195,7 @@ Při spuštění hry zvolte **Režim zobrazení → Bez obrazovky – hlasový r
 - Odkaz na obrazovku moderátora otevřete **v mobilu** a ten připojte k Bluetooth reproduktoru.
 - Hráči vidí text otázky i odpovědí na svých telefonech (u odpovědí jsou písmena A–F).
 - Telefon moderátora nahlas čte otázku a možnosti, „zbývá pět sekund“, správnou odpověď, průběžné pořadí (top 3) a vítěze.
-- Odpočet začne až po dočtení otázky (+ prodleva z Nastavení → Hlasatel (TTS)).
+- Odpočet před hlasováním (je-li zapnutý) a časový limit začnou až po dočtení otázky.
 - Tlačítka: **Start / Další / Pauza / 🔁 Zopakovat / 🔊 Hlas zapnut·vypnut / Přeskočit čtení**.
 - **Co všechno hlasatel říká a kdy** nastavíte v Nastavení → Hlasatel (TTS): číslo otázky, typ, možnosti (i s písmeny A–F), body a časový limit, upozornění na čas (polovina, před koncem, odpočet 3-2-1, „čas vypršel“), správnou odpověď, statistiku, vysvětlení, pořadí (kolik míst, s body či bez), vítěze, začátek hry a pauzu. Většinu voleb jde přepsat u kvízu i při spuštění hry.
 - **Pípání před koncem času** (bez řeči): Nastavení → Hlasatel (TTS) → „Zvukový signál před koncem“. Zapnutí, kolik vteřin před koncem začít, druh (prodlužující se tóny / stoupající výška / stejné pípnutí), dlouhý tón po vypršení a hlasitost; s ukázkou. Moderátor ho může za hry vypnout tlačítkem 🔔.
@@ -232,6 +242,8 @@ V Nginx Proxy Manageru:
 3. **Advanced** → vložte obsah souboru `deploy/npm-advanced.conf`. Zablokuje administraci z internetu.
    Administraci pak otevíráte v domácí síti přímo na adrese Caddy (`http://<IP-serveru>:<port>/admin/`).
 4. V `config.php` nastavte `base_url` na veřejnou adresu (`https://vase-domena`) a ověřte, že QR kód v lobby ukazuje na ni.
+5. U každého Proxy Hostu (i u případné druhé domény pro administraci) **nechte vypnuté „Cache Assets“** a v Caddy používejte blok z `Caddyfile.example` (soubory se posílají s `Cache-Control: no-cache`). Jinak by si prohlížeče po aktualizaci držely starý JavaScript.
+   Otevřené stránky hráčů a moderátora se po aktualizaci obnoví samy (nikdy ne uprostřed otázky), administraci obnovte ručně (Ctrl+F5).
 
 Co je z internetu dostupné: stránka hráčů, obrazovka moderátora (jen s tajným klíčem) a samotná hra.
 Co ne: administrace a její API.
@@ -255,8 +267,8 @@ Co ne: administrace a její API.
 
 - **Logy:** `logs/error.log`. Rotaci nastavíte: `sudo cp deploy/logrotate-kviz /etc/logrotate.d/kviz`.
 - **Staré hry** se mažou automaticky podle Nastavení → Údržba (výchozí 30 dní).
-- **Aktualizace aplikace:** přepište soubory z nové verze (**kromě** `config.php`, `data/` a `logs/`) a pak `sudo systemctl reload php<verze>-fpm`.
-  Struktura databáze se při potřebě doplní sama.
+- **Aktualizace aplikace:** přepište soubory z nové verze (**kromě** `config.php`, `data/` a `logs/`) a pak `sudo systemctl reload php<verze>-fpm`. Je-li aplikace git klon: `git -C /var/www/kviz pull --ff-only && sudo systemctl reload php<verze>-fpm`.
+  Struktura databáze se při potřebě doplní sama. Po změnách v `Caddyfile.example` porovnejte svůj Caddyfile (`caddy validate`, `systemctl reload caddy`).
 
 ---
 
@@ -270,6 +282,7 @@ Co ne: administrace a její API.
 | QR kód vede na špatnou adresu | `base_url` v `config.php` (bez lomítka na konci). |
 | Hráči se nepřipojí z mobilu | Firewall, port Caddy, jsou-li na jiné wifi, musí jít použít veřejnou adresu (kapitola 6). |
 | Generování Gemini skončí chybou | Nastavení → Gemini → *Otestovat klíč*; název modelu; `php -m` obsahuje `curl`. |
+| Hráči nebo moderátor mají po aktualizaci starou verzi (chybí nové funkce) | Zapnuté „Cache Assets“ v proxy, nebo starý `Cache-Control` v Caddy (kapitola 6). Stránku obnovte (Ctrl+F5). |
 | Hlas nemluví | Klepněte na „Povolit hlas“; zařízení moderátora potřebuje český hlas nebo zapnuté Gemini TTS. |
 | Pomalá hra při hodně hráčích | Spusťte `tools/loadtest.php`; zvyšte `pm.max_children`; `journalctl -u php<verze>-fpm \| grep max_children`. |
 | Po úpravě `config.php` to přestalo fungovat | BOM / chybějící čárka nebo uvozovka. Zkontrolujte: `php -l /var/www/kviz/config.php`. |
@@ -292,12 +305,12 @@ Co ne: administrace a její API.
 kviz/
   public/               ← jediná složka dostupná z webu (webroot)
     index.php  play/  host/  admin/  api/  assets/ (+ vendor/ – lokální QR knihovna)
-  src/                  ← PHP třídy (Db, Game, Scoring, Quiz, Gemini, Tts, Auth, Secrets, …)
+  src/                  ← PHP třídy (Db, Game, Scoring, Quiz, Settings, Assets, Gemini, Tts, Auth, Secrets, …)
   data/                 ← SQLite, uploady, TTS cache, šifrovaný klíč (zapisovatelné, mimo web)
   logs/                 ← error.log
   deploy/               ← php-fpm-kviz.conf, npm-advanced.conf, logrotate-kviz, cron-kviz-backup
   tools/                ← loadtest.php, backup.php
-  tests/                ← run.php (integrační test hry přes API)
+  tests/                ← run.php (integrační test hry přes API), fake_gemini.php (simulace Gemini bez klíče)
   docs/                 ← ZADANI.md (původní zadání), NAVRH-puvodni.md (historický návrh)
   CLAUDE.md             ← průvodce pro vývoj
   config.example.php    ← vzor konfigurace (config.php vytvoříte kopií)
