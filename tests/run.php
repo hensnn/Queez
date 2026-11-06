@@ -325,6 +325,55 @@ sleep(6);
 ok('po vypršení limitu server sám přejde na odhalení', (hostState($gt)['phase'] ?? '') === 'reveal');
 ok('odpověď po limitu je odmítnuta', answer($gt, $t, [1])['_code'] === 422);
 
+/* ---------------------------------------------------------------- 7b) ukončení po poslední odpovědi, odpočet před hlasováním, čas vyhodnocení */
+echo "Ukončení po poslední odpovědi, odpočet před hlasováním, čas vyhodnocení\n";
+$ge = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_on_all_answered' => true]);
+$e1 = join_($ge, 'Eva');
+$e2 = join_($ge, 'Emil');
+host($ge, 'start');
+answer($ge, $e1, [0]);
+ok('změna odpovědi povolena, jeden hráč ještě neodpověděl → otázka běží', (hostState($ge)['phase'] ?? '') === 'question');
+answer($ge, $e2, [1]);
+ok('end_on_all_answered: odpověděl poslední hráč → rovnou odhalení', (hostState($ge)['phase'] ?? '') === 'reveal');
+$gf = newGame($qid, ['default_time_limit' => 30, 'allow_change_answer' => true, 'end_on_all_answered' => false]);
+$f1 = join_($gf, 'Fanda');
+host($gf, 'start');
+answer($gf, $f1, [0]);
+ok('bez end_on_all_answered a se změnou odpovědi otázka čeká na limit', (hostState($gf)['phase'] ?? '') === 'question');
+
+$gp = newGame($qid, ['default_time_limit' => 20, 'allow_change_answer' => false, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2]);
+$p1 = join_($gp, 'Petr');
+host($gp, 'start');
+$pq = hostState($gp);
+$num = fn(array $a, string $path): int => is_numeric(v($a, $path)) ? (int)v($a, $path) : -1;
+ok('odpočet před hlasováním: stav nese pre_countdown 2 a opens_at v budoucnosti',
+    v($pq, 'game.pre_countdown') === 2 && $num($pq, 'question.opens_at') > $num($pq, 'server_time'));
+ok('limit se počítá od otevření hlasování (20 s)', $num($pq, 'question.ends_at') - $num($pq, 'question.opens_at') === 20000);
+ok('během odpočtu nelze hlasovat', answer($gp, $p1, [0])['_code'] === 422);
+sleep(3);
+ok('po odpočtu se hlasovat dá', answer($gp, $p1, [0])['_code'] === 200);
+ok('odpověděl jediný hráč (změna vypnuta) → odhalení', (hostState($gp)['phase'] ?? '') === 'reveal');
+
+$gq = newGame($qid, ['default_time_limit' => 20, 'allow_change_answer' => false, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2]);
+$q1 = join_($gq, 'Quido');
+host($gq, 'start');
+host($gq, 'pause');
+sleep(3);
+host($gq, 'resume');
+$rq = hostState($gq);
+ok('pauza v odpočtu: po pokračování začne odpočet znovu a limit zůstane celý',
+    $num($rq, 'question.opens_at') > $num($rq, 'server_time') && $num($rq, 'question.ends_at') - $num($rq, 'question.opens_at') === 20000);
+$gvv = newGame($qid, ['default_time_limit' => 20, 'pre_countdown_enabled' => true, 'pre_countdown_seconds' => 2], 'voice');
+ok('hlasový režim odpočet před hlasováním nepoužije', v(hostState($gvv), 'game.pre_countdown') === 0);
+
+$gr = newGame($qid, ['default_time_limit' => 0, 'allow_change_answer' => false, 'auto_advance' => true, 'auto_advance_delay' => 30, 'reveal_seconds' => 3]);
+$r1 = join_($gr, 'Radek');
+host($gr, 'start');
+answer($gr, $r1, [0]);
+ok('čas vyhodnocení: po odpovědi je odhalení', (hostState($gr)['phase'] ?? '') === 'reveal');
+sleep(4);
+ok('po 3 s (a ne po 30 s prodlevě) se automaticky přejde dál', (hostState($gr)['phase'] ?? '') !== 'reveal');
+
 /* ---------------------------------------------------------------- 8) CSV a vyhození hráče */
 echo "CSV a vyhození hráče\n";
 $gc = newGame($qid, ['default_time_limit' => 0, 'allow_change_answer' => false]);

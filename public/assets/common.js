@@ -138,6 +138,12 @@ function remainingMs(q, paused) {
   return Math.max(0, q.ends_at - Clock.now());
 }
 
+/** Zbývající ms do otevření hlasování (odpočet před hlasováním); 0 = hlasování už běží. */
+function waitMs(q) {
+  if (q.opens_at === null || q.opens_at === undefined) return 0;
+  return Math.max(0, q.opens_at - Clock.now());
+}
+
 /** Každých 200 ms zavolá fn; vrací funkci pro zrušení. */
 function every(ms, fn) { fn(); const id = setInterval(fn, ms); return () => clearInterval(id); }
 

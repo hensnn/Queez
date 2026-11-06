@@ -64,6 +64,7 @@ img{max-width:100%}
   background:radial-gradient(var(--cream) 0 58%,transparent 59%),conic-gradient(var(--ok) calc(var(--p)*1%),rgba(45,27,61,.18) 0)}
 .timer{width:4rem;height:4rem;font-size:1.6rem}
 .timer.low,.bigtimer.low{background:radial-gradient(#ffe3e8 0 58%,transparent 59%),conic-gradient(var(--bad) calc(var(--p)*1%),rgba(45,27,61,.18) 0);animation:pulse .8s infinite;color:var(--bad)}
+.timer.wait,.bigtimer.wait{background:radial-gradient(var(--cream) 0 58%,transparent 59%),conic-gradient(var(--accent) calc(var(--p)*1%),rgba(45,27,61,.18) 0)}   /* odpočet před hlasováním */
 .bigtimer{width:6.5rem;height:6.5rem;font-size:3rem}
 @keyframes pulse{50%{transform:scale(1.1)}}
 @keyframes pop{0%{transform:scale(.85);opacity:0}70%{transform:scale(1.04)}100%{transform:scale(1);opacity:1}}

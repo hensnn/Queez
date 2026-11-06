@@ -314,7 +314,7 @@ function viewQuestion(st) {
     h('div', {},
       h('div', { class: 'row', style: 'display:flex;justify-content:space-between;align-items:center' },
         h('span', { class: 'pill' }, '❓ ' + (q.index + 1) + ' / ' + q.total + (q.type === 'poll' ? ' · anketa' : ' · ⭐ ' + q.points)),
-        hasLimit ? timer : h('span', { class: 'pill' }, '∞ bez limitu'),
+        (hasLimit || waitMs(q) > 0) ? timer : h('span', { class: 'pill' }, '∞ bez limitu'),
         h('span', { class: 'pill gold' }, '✍ ' + q.answered_count + ' / ' + g.players_count)),
       h('div', { class: 'h-q' }, q.text),
       q.image ? h('img', { class: 'qimg', style: 'max-height:32vh', src: '../api/media.php?f=' + encodeURIComponent(q.image), alt: '' }) : null,
@@ -322,8 +322,15 @@ function viewQuestion(st) {
     [pauseButton(st), btn('Ukončit otázku ▶', () => control('next')), endButton()]);
   stopTimer = every(200, () => {
     if (q.reading) { timer.textContent = '🔊'; return; }
+    const w = st.paused ? 0 : waitMs(q);
+    if (w > 0) {   // odpočet před hlasováním
+      timer.textContent = Math.ceil(w / 1000);
+      timer.className = 'bigtimer wait';
+      setRing(timer, w, (g.pre_countdown || 1) * 1000);
+      return;
+    }
     const r = remainingMs(q, st.paused);
-    if (r === null) return;
+    if (r === null) { if (!hasLimit) { timer.textContent = '∞'; timer.className = 'bigtimer'; setRing(timer, null, 0); } return; }
     const s = Math.ceil(r / 1000);
     timer.textContent = st.paused ? '⏸' : s;
     timer.className = 'bigtimer' + (s <= (g.warn_seconds || 5) && !st.paused ? ' low' : '');

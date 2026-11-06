@@ -130,8 +130,9 @@ function viewQuestion(st) {
   };
 
   const reading = !!q.reading;   // hlasový režim: otázka se ještě předčítá, odpočet nezačal
-  const closed = () => { const r = remainingMs(q, st.paused); return reading || st.paused || (r !== null && r <= 0); };
-  const locked = reading || (me.answered && !st.game.allow_change_answer);
+  const waiting0 = !st.paused && waitMs(q) > 0;   // odpočet před hlasováním: otázka je vidět, ale hlasovat ještě nejde
+  const closed = () => { const r = remainingMs(q, st.paused); return reading || st.paused || waitMs(q) > 0 || (r !== null && r <= 0); };
+  const locked = reading || waiting0 || (me.answered && !st.game.allow_change_answer);
 
   const hasText = q.options.some(o => o.text !== null);
   const tiles = h('div', { class: 'tiles n' + q.options.length + (hasText ? ' txt' : '') + layoutClass(st) },
@@ -174,8 +175,18 @@ function viewQuestion(st) {
 
   if (reading) put(status, h('div', { class: 'pill' }, '🔊 Čte se otázka, odpověď půjde za chvilku'));
 
+  if (waiting0) put(status, h('div', { class: 'pill' }, '⏳ Hlasování se otevře za chvilku'));
+
   stopTimer = every(200, () => {
     if (reading) { timeEl.textContent = '🔊'; return; }
+    if (waiting0) {
+      const w = waitMs(q);
+      if (w <= 0) { render(st); return; }   // hlasování se otevřelo → překreslit s povolenými tlačítky
+      timeEl.textContent = Math.ceil(w / 1000);
+      timeEl.className = 'timer wait';
+      setRing(timeEl, w, (st.game.pre_countdown || 1) * 1000);
+      return;
+    }
     const r = remainingMs(q, st.paused);
     if (!hasLimit || r === null) { timeEl.textContent = '∞'; return; }
     const s = Math.ceil(r / 1000);

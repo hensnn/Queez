@@ -211,6 +211,9 @@ final class Game
                 throw new InvalidArgumentException('Otázka se ještě čte, počkejte na začátek odpočtu.');
             }
             $now = now_ms();
+            if ($now < (int)$g['question_started_at']) {
+                throw new InvalidArgumentException('Hlasování ještě nezačalo, počkejte na konec odpočtu.');
+            }
             if ($g['question_ends_at'] !== null && $now > (int)$g['question_ends_at']) {
                 throw new InvalidArgumentException('Čas vypršel.');
             }
@@ -252,8 +255,8 @@ final class Game
                     [$g['id'], $idx, $player['id'], json_encode($c), $now]
                 );
                 Db::exec('UPDATE games SET answered_count=answered_count+1, version=version+1 WHERE id=?', [$g['id']]);
-                // Všichni odpověděli → hned uzavřít (jen když nejde odpověď měnit)
-                if (empty($s['allow_change_answer'])) {
+                // Všichni odpověděli → hned uzavřít (nastavení „end_on_all_answered“, nebo když nejde odpověď měnit)
+                if (!empty($s['end_on_all_answered']) || empty($s['allow_change_answer'])) {
                     $g = self::byId((int)$g['id']);
                     if ((int)$g['players_count'] > 0 && (int)$g['answered_count'] >= (int)$g['players_count']) {
                         self::closeQuestion($g);
@@ -264,6 +267,16 @@ final class Game
     }
 
     /* ------------------------------------------------------------------ přechody fází (volat uvnitř transakce) */
+
+    /** Délka odpočtu před otevřením hlasování (ms); 0 = vypnuto. Jen hra s obrazovkou (v hlasovém režimu se otázka předčítá). */
+    private static function preDelayMs(array $g): int
+    {
+        $s = $g['s'];
+        if ($g['mode'] !== 'screen' || empty($s['pre_countdown_enabled'])) {
+            return 0;
+        }
+        return max(0, min(30, (int)($s['pre_countdown_seconds'] ?? 3))) * 1000;
+    }
 
     private static function openQuestion(array $g, int $idx): void
     {
@@ -276,11 +289,13 @@ final class Game
         $limit = (int)$q['time_limit'];
         // Hlasový režim: nejdřív se otázka předčítá (reading=1), odpočet začne až po signálu „dočteno“.
         $reading = $g['mode'] === 'voice' ? 1 : 0;
+        // Odpočet před hlasováním: hlasování se otevře až v „started_at“ a limit se počítá od tohoto okamžiku.
+        $start = $now + ($reading ? 0 : self::preDelayMs($g));
         Db::exec(
             "UPDATE games SET phase='question', current_index=?, question_started_at=?, question_ends_at=?,
                phase_changed_at=?, answered_count=0, paused_remaining=NULL, reading=?,
                started_at=COALESCE(started_at,?), version=version+1 WHERE id=?",
-            [$idx, $now, ($limit > 0 && !$reading) ? $now + $limit * 1000 : null, $now, $reading, time(), $g['id']]
+            [$idx, $start, ($limit > 0 && !$reading) ? $start + $limit * 1000 : null, $now, $reading, time(), $g['id']]
         );
     }
 
@@ -432,8 +447,11 @@ final class Game
         if ($g['phase'] === 'question') {
             return $g['question_ends_at'] !== null && $now >= (int)$g['question_ends_at'];
         }
-        return !empty($g['s']['auto_advance'])
-            && $now - (int)$g['phase_changed_at'] >= (int)$g['s']['auto_advance_delay'] * 1000;
+        $delay = (int)$g['s']['auto_advance_delay'];
+        if ($g['phase'] === 'reveal' && (int)($g['s']['reveal_seconds'] ?? 0) > 0) {
+            $delay = (int)$g['s']['reveal_seconds'];   // vlastní čas na vyhodnocení odpovědi
+        }
+        return !empty($g['s']['auto_advance']) && $now - (int)$g['phase_changed_at'] >= $delay * 1000;
     }
 
     /** Provede případný čekající přechod (vypršel čas / automatický postup) a vrátí aktuální hru. */
@@ -491,9 +509,15 @@ final class Game
                         break;
                     }
                     $rem = $g['question_ends_at'] !== null ? max(0, (int)$g['question_ends_at'] - $now) : null;
+                    if ($g['phase'] === 'question' && !$g['reading'] && (int)$g['question_started_at'] > $now) {
+                        // pauza v odpočtu před hlasováním: po pokračování začne odpočet znovu a limit zůstane celý
+                        $lim = (int)self::question((int)$g['id'], (int)$g['current_index'])['time_limit'];
+                        $rem = $lim > 0 ? $lim * 1000 : null;
+                    }
+                    // phase_changed_at = okamžik pauzy (podle něj se po pokračování pozná pauza v odpočtu před hlasováním)
                     Db::exec(
-                        'UPDATE games SET paused=1, paused_remaining=?, question_ends_at=NULL, version=version+1 WHERE id=?',
-                        [$rem, $g['id']]
+                        'UPDATE games SET paused=1, paused_remaining=?, question_ends_at=NULL, phase_changed_at=?, version=version+1 WHERE id=?',
+                        [$rem, $now, $g['id']]
                     );
                     break;
                 case 'resume':
@@ -502,10 +526,18 @@ final class Game
                     }
                     $ends = ($g['phase'] === 'question' && $g['paused_remaining'] !== null)
                         ? $now + (int)$g['paused_remaining'] : null;
+                    $startedAt = (int)$g['question_started_at'];
+                    $pre = self::preDelayMs($g);
+                    if ($g['phase'] === 'question' && !$g['reading'] && $pre > 0 && $startedAt > (int)$g['phase_changed_at']) {
+                        // pauza byla v odpočtu před hlasováním → odpočet začne znovu, limit zůstane celý
+                        $startedAt = $now + $pre;
+                        $lim = (int)self::question((int)$g['id'], (int)$g['current_index'])['time_limit'];
+                        $ends = $lim > 0 ? $startedAt + $lim * 1000 : null;
+                    }
                     Db::exec(
-                        'UPDATE games SET paused=0, paused_remaining=NULL, question_ends_at=?, phase_changed_at=?,
+                        'UPDATE games SET paused=0, paused_remaining=NULL, question_ends_at=?, question_started_at=?, phase_changed_at=?,
                            version=version+1 WHERE id=?',
-                        [$ends, $now, $g['id']]
+                        [$ends, $startedAt, $now, $g['id']]
                     );
                     break;
                 case 'finish':
@@ -586,6 +618,7 @@ final class Game
                 'letters'             => ($s['tts_option_letters'] ?? 'auto') === 'always' || (($s['tts_option_letters'] ?? 'auto') === 'auto' && $g['mode'] === 'voice'),
                 'lb_next'             => $phase === 'reveal' ? self::showLeaderboardAfter($g) : true,
                 'allow_change_answer' => !empty($s['allow_change_answer']),
+                'pre_countdown'       => intdiv(self::preDelayMs($g), 1000),
                 'auto_advance'        => !empty($s['auto_advance']),
             ],
         ];
@@ -607,6 +640,7 @@ final class Game
                 'image'            => ($showQ && $q['image']) ? $q['image'] : null,
                 'options'          => array_map(fn($o) => ['pos' => (int)$o['pos'], 'text' => $showText ? $o['text'] : null], $q['options']),
                 'started_at'       => (int)$g['question_started_at'],
+                'opens_at'         => (int)$g['question_started_at'],   // kdy se otevře hlasování (při odpočtu před hlasováním leží v budoucnu)
                 'reading'          => (bool)$g['reading'],
                 'ends_at'          => $g['question_ends_at'] === null ? null : (int)$g['question_ends_at'],
                 'time_limit'       => (int)$q['time_limit'],
